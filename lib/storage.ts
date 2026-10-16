@@ -1,5 +1,4 @@
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { AwsClient } from "aws4fetch";
 
@@ -44,8 +43,18 @@ export function storageMode(): "r2" | "local" | "none" {
   return process.env.NODE_ENV === "production" && process.env.ALLOW_LOCAL_STORAGE !== "1" ? "none" : "local";
 }
 
-/** Outside the source tree so dev file-watching never sees it. */
-export const localStorageDir = () => process.env.LOCAL_STORAGE_DIR ?? path.join(process.cwd(), ".next", "cache", "uploads");
+/**
+ * Outside the source tree. Built so Turbopack can't trace it: a traced path under
+ * .next/cache puts that folder (where dev PGlite writes on every request) under watch,
+ * and dev reloads in a loop.
+ */
+export const localStorageDir = () => process.env.LOCAL_STORAGE_DIR ?? [process.cwd(), ".next", "cache", "uploads"].join(path.sep);
+
+/**
+ * fs is loaded out of Turbopack's sight: with dynamic paths it would otherwise trace the
+ * whole project as a dependency, and the dev server rebuilds on every log write.
+ */
+const fs = (): Promise<typeof import("node:fs/promises")> => import(/* turbopackIgnore: true */ /* webpackIgnore: true */ "node:fs/promises");
 
 const KEY = /^uploads\/[A-Za-z0-9_-]+\/[0-9a-f-]{36}\.(pdf|pptx|docx|jpg|png|webp)$/;
 
@@ -107,6 +116,7 @@ export async function putObject(key: string, body: Uint8Array, contentType: stri
   }
   if (storageMode() === "none") throw new StorageError("File storage isn't set up yet.");
   const target = path.join(localStorageDir(), key);
+  const { mkdir, writeFile } = await fs();
   await mkdir(path.dirname(target), { recursive: true });
   await writeFile(target, body);
 }
@@ -119,7 +129,7 @@ export async function readObject(key: string): Promise<Uint8Array | null> {
     return res.ok ? new Uint8Array(await res.arrayBuffer()) : null;
   }
   try {
-    return new Uint8Array(await readFile(path.join(localStorageDir(), key)));
+    return new Uint8Array(await (await fs()).readFile(path.join(localStorageDir(), key)));
   } catch {
     return null;
   }
@@ -132,5 +142,5 @@ export async function deleteObject(key: string): Promise<void> {
     await remote.client.fetch(`${remote.endpoint}/${key}`, { method: "DELETE" });
     return;
   }
-  await rm(path.join(localStorageDir(), key), { force: true });
+  await (await fs()).rm(path.join(localStorageDir(), key), { force: true });
 }

@@ -16,13 +16,14 @@ npm install
 npm run dev        # http://localhost:3000
 ```
 
-No setup needed: without `DATABASE_URL` the app starts an embedded Postgres (PGlite) in `.next/cache/pglite`, migrates it and seeds demo data, and without auth keys you're signed in as the demo student. Payments complete instantly in local dev when no Paystack key is set. `npm run db:reset-local` wipes the local database (it re-seeds on next start).
+No setup needed: without `DATABASE_URL` the app starts an embedded Postgres (PGlite) in `.next/cache/pglite`, migrates it and seeds demo data, and without auth keys you're signed in as the demo student. Without AI keys, uploads are processed by an offline stand-in provider (simple questions straight from the text), and without R2 the files go to `.next/cache/uploads`. Payments complete instantly in local dev when no Paystack key is set. `npm run db:reset-local` wipes the local database (it re-seeds on next start).
 
 For a real setup copy `.env.example` to `.env.local`, then `npm run db:migrate && npm run db:seed`.
 
 ```bash
 npm test           # unit + database tests (PGlite, no server needed)
 npm run build && npm run e2e:m2   # Milestone 2 acceptance in a real browser
+npm run build && npm run e2e:m3   # Milestone 3 acceptance (upload → questions, reuse, provider failover)
 npm run typecheck
 npm run lint
 ```
@@ -91,6 +92,46 @@ The engine in `lib/exam-engine` is ported from SonoCBT's exam runtime: `lib/exam
   - the per-topic breakdown adds up to the score and matches the review list
 - **Tests:** the same cases are also covered at service level in `tests/exam-service.test.ts`.
 
+**Milestone 3 — Upload and AI pipeline** ✅ (designs 2e–2g)
+- **Upload (`/upload`, 2e):** Camera (several photos, numbered in order, resized on the phone to ~1600px JPEG) or Files (PDF, PPTX, DOCX, up to 20 MB). Course select. "Share with your class" toggle, on by default: generated questions join the course bank for the school, and files always stay private.
+- **Storage (`lib/storage.ts`, ported from SonoCBT):** Cloudflare R2. The phone hashes the file (SHA-256), then PUTs it straight to R2 with a signed URL that expires in 10 minutes. The server never relays the bytes. Without R2 (dev only), `/api/uploads/local` takes the same signed PUT.
+- **Hash reuse:** if the same file is already done (by anyone), the upload is ready instantly with no upload and no AI. The server re-hashes the stored file in the job, so a wrong phone hash can't borrow someone else's questions. In the same course with the original shared, the questions are already in the bank and nothing is copied. Otherwise they are copied in as the student's own. A second upload of a file still being processed waits for the first.
+- **Pipeline (`lib/uploads.ts`, `lib/ingest/`):**
+  - **Hash check, then extraction:** `pdf-parse` per page, `officeparser` per slide or per ~2,500-character Word section, AI vision for photos, 4 per call.
+  - **Chunking:** ~6,000-character chunks with page labels such as "p.3–5" and "slides 4–6".
+  - **Generation:** one AI call per chunk returns 6–20 questions (single, multiple, true/false, fill-in) with explanations and topics, plus flashcards.
+  - **Topic merging:** topics are merged into existing course topics by similarity (SonoCBT's Sørensen–Dice, plus a word-set check).
+  - **Embeddings:** chunks are embedded at 768 dimensions for the tutor.
+  - **Past papers:** detected by layout (or by the vision call for photos); their real questions are transcribed as-is, answered and explained, and tagged "past question".
+  - **Validation:** every reply is checked with Zod and each question on its own, so bad ones are dropped individually. Invalid output is retried once, then discarded.
+- **AI adapter (`lib/ai`):** one interface: `generateQuestions`, `extractPastQuestions`, `generateFlashcards`, `readImage`, `answerFromNotes`, `gradeTheory`, `embed`.
+  - **Order:** providers come from env in order: Gemini (ported from SonoCBT, with model fallback inside the provider), then Groq. A 429 or quota error cools that provider down in the `ai_providers` table for the wait the provider asked for (an hour for a daily quota), and the next one is tried. When all are cooling down, the job waits in the queue without using up a retry.
+  - **Testing failover:** `AI_FORCE_FAIL=gemini` makes a provider always fail.
+- **Queue (`lib/jobs.ts`, table `ai_jobs`):** workers claim jobs with `FOR UPDATE SKIP LOCKED`, Pro jobs run first, and crashed workers lose their lease after 5 minutes. Jobs retry with backoff (30 s, then 2 min), then fail with a clear message.
+  - **Workers run** from Vercel Cron (`/api/cron/jobs` every minute, `vercel.json`, protected by `CRON_SECRET`), straight after an upload, and from the progress poll while someone is watching.
+- **Limits (`lib/plans.ts`):**
+  - Uploads per day are counted when the file arrives.
+  - Pages per upload: only the first 20 (free) or 60 (Pro) are read, and the student is told.
+  - AI questions per day: today's allowance is shared across chunks and counted as questions are saved.
+  - Reused uploads cost no AI.
+- **Progress (`/upload/[id]`, 2f):** the steps Uploading, Reading your notes, Making questions and Ready, with live counts and a status line such as "Writing questions on **Concord** (page 4 of 20)". When it's busy, the screen shows the queue wait in minutes. A student can leave: the work continues on the server and Home shows the result.
+- **Ready (2g):** the question count, topics found with counts, flashcards made, +60 XP, "Start a 20-question mock" and Practise (both from this upload's questions), and an AI-generated label.
+- **Review (`/upload/[id]/questions`):** every generated question with its answer, explanation and source ("GST111 notes · p.4"). Students can edit or delete their own; a deleted question is hidden, so past results keep their review.
+- **+50 XP** goes to the uploader the first time a classmate practises their questions.
+- **Acceptance, checked in a real browser against a production build:** `npm run build && npm run e2e:m3`. It shows:
+  - a 20-page PDF becomes 30+ questions and flashcards
+  - a classmate's re-upload of the same file is ready in under a second
+  - with `AI_FORCE_FAIL` on the first provider, every chunk is made by the second and the first is cooling down
+- **Tests:** `tests/upload-pipeline.test.ts` and `tests/ai-ingest.test.ts` cover these and the Gemini/Groq adapters with mocked HTTP, extraction of PDF, PPTX and DOCX, chunking, topic merging and validation.
+
+**Setting up AI and storage**
+1. **Gemini (required for real questions):** get a free key at aistudio.google.com and set `GEMINI_API_KEY`. `GEMINI_MODEL` takes a comma-separated fallback list. Check the current free-tier models and limits when you set it up, because they change often. `GEMINI_EMBED_MODEL` defaults to `gemini-embedding-001`.
+2. **Groq (optional fallback):** a free key from console.groq.com in `GROQ_API_KEY`. `GROQ_MODEL` is optional.
+3. **Cloudflare R2:**
+   - **Variables:** set `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` and `R2_BUCKET`. The bucket stays private.
+   - **CORS rule:** add one to the bucket so phones can PUT to it: allowed origin `APP_URL`, method `PUT`, header `Content-Type`.
+4. **Cron:** set `CRON_SECRET`. On the Vercel Hobby plan, crons run at most once a day, so either use Pro or point any every-minute scheduler at `/api/cron/jobs` with `Authorization: Bearer $CRON_SECRET`. Uploads are also processed straight away after upload and while the progress screen is open.
+
 **Account screens** (designs 6a–6e desktop, 3a–3i phone)
 | Route | What it does |
 | --- | --- |
@@ -101,7 +142,7 @@ The engine in `lib/exam-engine` is ported from SonoCBT's exam runtime: `lib/exam
 | `?paywall=1` on any page | Paywall: bottom sheet on phones, modal on desktop. Paystack checkout. |
 | `/billing/callback`, `/api/paystack/webhook`, `/billing/success` | Verify payments server-side and extend `proUntil`. Passes stack, and a payment is applied only once. |
 | `/onboarding` | See Milestone 1 above. |
-| `/upload` | Shows the daily-limit state when today's free uploads are used. Includes the invite link and WhatsApp share. |
+| `/upload` | When today's uploads or AI questions are used up, shows the daily-limit state, with the invite link and WhatsApp share. |
 | `/i/[code]` | Invite links. The inviter is recorded when the new student signs up. |
 | `/dev/states` | Dev-only gallery of the queue, limit and payment states and the Home skeleton. |
 
@@ -119,10 +160,12 @@ The build brief is the source of truth for product rules:
 ## Next milestones
 
 The brief's build order from here:
-- **Milestone 3:** upload and AI pipeline.
 - **Milestone 4:** shared banks and mastery: the full course page, reporting, and the study plan with readiness.
 - **Milestone 5:** flashcards, tutor and theory grading.
 
 The Account and social screens in Milestone 6 were built early, from the designs. Landing page 4a comes with the marketing work.
 
-**Local testing tip:** in demo mode, `/courses/<id>/mock?quick=1` adds a 1-minute timer for trying auto-submit.
+**Local testing tips** (demo mode):
+- `/courses/<id>/mock?quick=1` adds a 1-minute timer for trying auto-submit.
+- `/dev/new-student?ready=1&next=/upload` signs you in as a fresh classmate of the demo student, with a full upload allowance.
+- `FAKE_AI_DELAY_MS=3000 npm run dev` slows the offline provider so you can watch the progress screen.

@@ -10,7 +10,7 @@ import type { GenerateInput, GeneratedQuestion, GeneratedSet, PastPaperInput, Ru
  */
 
 const STOP = new Set(
-  "about above after again against because before being below between could during every first other their there these those through under until where which while whose would should shall might often always never using within without people things however therefore although another important".split(
+  "about above after again against because before being below between could during every first other their there these those through under until where which while whose would should shall might often always never using within without people things however therefore although another important students student lecturers lecturer examiners examiner definition defined describe describes remember common often called refers means".split(
     " ",
   ),
 );
@@ -29,6 +29,7 @@ function hash(s: string): number {
 
 function sentencesOf(text: string): string[] {
   return text
+    .replace(/\n(?=[a-z(,])/g, " ") // PDF lines wrapped mid-sentence
     .split(/(?<=[.!?])\s+|\n+/)
     .map((s) => s.replace(/\s+/g, " ").trim())
     .filter((s) => s.length >= 30 && s.length <= 260 && s.split(" ").length >= 6 && /[.!?]$/.test(s));
@@ -122,6 +123,9 @@ export function fakeProvider(name = "fake"): AiProvider {
     name,
     vision: true,
     async generate<T>(req: AiRequest<T>): Promise<T> {
+      // FAKE_AI_DELAY_MS slows it down like a real provider (to see the progress screen in dev).
+      const delay = Number(process.env.FAKE_AI_DELAY_MS) || 0;
+      if (delay) await new Promise((r) => setTimeout(r, delay));
       let reply: unknown;
       switch (req.task) {
         case "generate_questions":

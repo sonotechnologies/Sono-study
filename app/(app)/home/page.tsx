@@ -9,6 +9,7 @@ import { getCourseBoard } from "@/lib/leaderboard";
 import { inProgressAttempt } from "@/lib/exam-engine/service";
 import { formatClock } from "@/lib/format";
 import { ButtonLink } from "@/components/ui/primitives";
+import { recentUploads } from "@/lib/uploads";
 import { requireViewer } from "@/lib/viewer";
 
 export const metadata: Metadata = { title: "Home" };
@@ -22,6 +23,10 @@ function secondsUntil(d: Date) {
   return Math.max(0, Math.round((d.getTime() - Date.now()) / 1000));
 }
 
+function secondsSince(d: Date) {
+  return Math.round((Date.now() - d.getTime()) / 1000);
+}
+
 function daysUntil(date: string) {
   const ms = new Date(`${date}T00:00:00+01:00`).getTime() - Date.now();
   return Math.max(0, Math.ceil(ms / 86_400_000));
@@ -33,10 +38,13 @@ export default async function HomePage() {
   const first = (viewer.name ?? viewer.handle ?? "there").split(" ")[0];
   const course = viewer.courses[0];
   const db = await getDb();
-  const [board, running] = await Promise.all([
+  const [board, running, [latest]] = await Promise.all([
     course ? getCourseBoard(db, { courseId: course.id, scope: "week", viewer, limit: 1 }) : null,
     inProgressAttempt(db, viewer.id),
+    recentUploads(db, viewer.id, 1),
   ]);
+  // The upload a student walked away from: still cooking, or finished in the last day.
+  const upload = latest && (latest.status !== "ready" && latest.status !== "failed" ? true : latest.completedAt && secondsSince(latest.completedAt) < 86_400) ? latest : null;
   const runningCourse = running ? viewer.courses.find((c) => c.id === running.courseId) : null;
   const runningLeft = running?.endsAt ? secondsUntil(running.endsAt) : null;
   const exams = viewer.courses.filter((c) => c.examDate);
@@ -82,6 +90,20 @@ export default async function HomePage() {
             Practise a topic
           </ButtonLink>
         </div>
+      )}
+
+      {upload && (
+        <Link href={`/upload/${upload.id}`} className="flex items-center gap-4 rounded-2xl border border-border bg-surface p-4 hover:border-accent lg:p-5">
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="font-display text-lg font-bold">
+              {upload.status === "ready" ? `${upload.questionsMade} new questions ready` : upload.status === "failed" ? "Your upload didn't work" : "Cooking your questions…"}
+            </span>
+            <span className="truncate text-sm text-ink-muted">
+              {displayCourseCode(upload.courseCode)} · {upload.title}
+            </span>
+          </span>
+          <ChevronRight size={20} className="text-ink-muted" aria-hidden />
+        </Link>
       )}
 
       <InstallPrompt />

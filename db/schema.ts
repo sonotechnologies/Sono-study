@@ -292,6 +292,8 @@ export type AttemptConfig = {
   topicIds: string[];
   difficulty: "mixed" | "easier" | "harder";
   bankId: string | null;
+  /** Only questions made from this upload (the "ready" screen's mock and practice). */
+  uploadId?: string | null;
 };
 
 export type LateAnswer = { questionId: string; response: AttemptResponse | null; clientSeq: number; receivedAt: string };

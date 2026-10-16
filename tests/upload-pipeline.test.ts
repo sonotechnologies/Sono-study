@@ -12,6 +12,7 @@ import { fakeProvider } from "@/lib/ai/fake";
 import { claimJob, enqueue, RetryLater, settle } from "@/lib/jobs";
 import { putObject } from "@/lib/storage";
 import { getUsage } from "@/lib/usage";
+import { startAttempt, syncAttempt } from "@/lib/exam-engine/service";
 import { confirmUpload, getUploadView, prepareUpload, processQueue, UploadError } from "@/lib/uploads";
 import { z } from "zod";
 import { makeNotesPdf } from "./fixtures/notes";
@@ -197,6 +198,28 @@ describe("provider fallback", () => {
     const providers = await db.select({ p: aiJobs.provider }).from(aiJobs).where(and(eq(aiJobs.type, "generate_chunk"), isNotNull(aiJobs.provider)));
     expect(providers.some((r) => r.p === "fake-backup")).toBe(true);
     expect(providers.some((r) => r.p === "gemini-down")).toBe(false);
+  });
+});
+
+describe("classmate XP", () => {
+  it("gives the uploader +50 XP once, the first time a classmate practises their questions", async () => {
+    const owner = await student("xp-owner", "pro");
+    const mate = await student("xp-mate");
+    setAiProvidersForTests([fakeProvider("fake")]);
+    const prep = await uploadPdf(owner, new Uint8Array([...pdf, 77]));
+    await drain();
+    const xp = async () => (await db.select({ xp: users.xp }).from(users).where(eq(users.id, owner)))[0].xp;
+    const before = await xp();
+    for (let i = 0; i < 2; i++) {
+      const a = await startAttempt(db, mate, { mode: "mock", courseId, config: { count: 5, timeLimitSec: null, topicIds: [], difficulty: "mixed", bankId: null, uploadId: prep.uploadId } });
+      expect(a.snapshot.length).toBe(5);
+      await syncAttempt(db, mate, { attemptId: a.id, currentIndex: 0, answers: [], submit: true });
+    }
+    expect(await xp()).toBe(before + 50);
+    // The owner practising their own questions earns nothing extra.
+    const own = await startAttempt(db, owner, { mode: "practice", courseId, topicIds: [], uploadId: prep.uploadId });
+    await syncAttempt(db, owner, { attemptId: own.id, currentIndex: 0, answers: [], submit: true });
+    expect(await xp()).toBe(before + 50);
   });
 });
 

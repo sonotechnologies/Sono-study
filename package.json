@@ -13,7 +13,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx scripts/seed.mts",
     "db:reset-local": "rm -rf .next/cache/pglite",
-    "e2e:m2": "node e2e/acceptance-m2.mjs"
+    "e2e:m2": "node e2e/acceptance-m2.mjs",
+    "e2e:m3": "tsx e2e/acceptance-m3.mts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",

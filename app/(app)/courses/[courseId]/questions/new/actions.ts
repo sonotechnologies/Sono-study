@@ -1,9 +1,10 @@
 "use server";
 
 import { and, eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getDb } from "@/db";
-import { questions, topics } from "@/db/schema";
+import { questions, topics, uploads } from "@/db/schema";
 import { toRow } from "@/db/question-bank";
 import type { BankQuestion } from "@/db/question-bank/types";
 import { requireViewer } from "@/lib/viewer";
@@ -27,6 +28,34 @@ export type NewQuestionResult = { ok: true } | { ok: false; error: string };
 
 /** Manual question entry (brief milestone 2: for testing before AI generation). */
 export async function createQuestion(raw: NewQuestionInput): Promise<NewQuestionResult> {
+  return saveQuestion(raw, null);
+}
+
+/** Edits a question the student made: typed in, or generated from their own upload (brief: review, edit or delete). */
+export async function updateQuestion(questionId: string, raw: NewQuestionInput): Promise<NewQuestionResult> {
+  return saveQuestion(raw, questionId);
+}
+
+/** Removes it from every bank and future mock. Hidden, not deleted, so past results keep their review. */
+export async function hideQuestion(questionId: string): Promise<NewQuestionResult> {
+  const viewer = await requireViewer();
+  const db = await getDb();
+  if (!(await canEdit(db, viewer.id, questionId))) return { ok: false, error: "You can only remove questions from your own notes." };
+  await db.update(questions).set({ status: "hidden" }).where(eq(questions.id, questionId));
+  revalidatePath("/upload", "layout");
+  return { ok: true };
+}
+
+async function canEdit(db: Awaited<ReturnType<typeof getDb>>, userId: string, questionId: string) {
+  const [q] = await db.select({ createdById: questions.createdById, sourceUploadId: questions.sourceUploadId }).from(questions).where(eq(questions.id, questionId));
+  if (!q) return false;
+  if (q.createdById === userId) return true;
+  if (!q.sourceUploadId) return false;
+  const [u] = await db.select({ id: uploads.id }).from(uploads).where(and(eq(uploads.id, q.sourceUploadId), eq(uploads.userId, userId)));
+  return !!u;
+}
+
+async function saveQuestion(raw: NewQuestionInput, questionId: string | null): Promise<NewQuestionResult> {
   const parsed = input.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Check the form." };
   const q = parsed.data;
@@ -56,20 +85,18 @@ export async function createQuestion(raw: NewQuestionInput): Promise<NewQuestion
   }
 
   const db = await getDb();
+  if (questionId && !(await canEdit(db, viewer.id, questionId))) return { ok: false, error: "You can only edit questions from your own notes." };
   const [existing] = await db
     .select({ id: topics.id })
     .from(topics)
     .where(and(eq(topics.courseId, q.courseId), eq(topics.name, q.topic)));
   const topicId = existing?.id ?? (await db.insert(topics).values({ courseId: q.courseId, name: q.topic }).returning({ id: topics.id }))[0].id;
-  await db.insert(questions).values({
-    courseId: q.courseId,
-    topicId,
-    createdById: viewer.id,
-    ...row,
-    stem: q.stem,
-    explanation: q.explanation,
-    difficulty: q.difficulty,
-    visibility: q.share ? "shared" : "private",
-  });
+  const values = { ...row, topicId, stem: q.stem, explanation: q.explanation, difficulty: q.difficulty, visibility: q.share ? ("shared" as const) : ("private" as const) };
+  if (questionId) {
+    await db.update(questions).set(values).where(eq(questions.id, questionId));
+    revalidatePath("/upload", "layout");
+  } else {
+    await db.insert(questions).values({ courseId: q.courseId, createdById: viewer.id, ...values });
+  }
   return { ok: true };
 }

@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Check, Plus, X } from "lucide-react";
-import { createQuestion, type NewQuestionInput } from "@/app/(app)/courses/[courseId]/questions/new/actions";
+import { createQuestion, updateQuestion, type NewQuestionInput } from "@/app/(app)/courses/[courseId]/questions/new/actions";
 import { Switch } from "@/components/ui/switch";
 import { buttonClass } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
@@ -31,9 +32,23 @@ const blank = (courseId: string): NewQuestionInput => ({
   share: true,
 });
 
-export function QuestionForm({ courseId, topics }: { courseId: string; topics: string[] }) {
-  const [q, setQ] = useState<NewQuestionInput>(() => blank(courseId));
-  const [acceptedText, setAcceptedText] = useState("");
+/** Manual entry, or (with questionId) editing a question from the student's own notes. */
+export function QuestionForm({
+  courseId,
+  topics,
+  initial,
+  questionId,
+  doneHref,
+}: {
+  courseId: string;
+  topics: string[];
+  initial?: NewQuestionInput;
+  questionId?: string;
+  doneHref?: string;
+}) {
+  const router = useRouter();
+  const [q, setQ] = useState<NewQuestionInput>(() => initial ?? blank(courseId));
+  const [acceptedText, setAcceptedText] = useState(() => initial?.accepted.join("\n") ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(0);
   const [pending, start] = useTransition();
@@ -48,13 +63,15 @@ export function QuestionForm({ courseId, topics }: { courseId: string; topics: s
   function submit() {
     setError(null);
     start(async () => {
-      const res = await createQuestion({
+      const payload = {
         ...q,
         options: choice ? q.options : [],
         correct: choice ? q.correct : [],
         accepted: acceptedText.split(/\n|;/).map((s) => s.trim()).filter(Boolean),
-      });
+      };
+      const res = questionId ? await updateQuestion(questionId, payload) : await createQuestion(payload);
       if (!res.ok) return setError(res.error);
+      if (questionId) return router.push(doneHref ?? "/upload");
       setSaved((n) => n + 1);
       setQ({ ...blank(courseId), topic: q.topic, type: q.type, share: q.share, difficulty: q.difficulty });
       setAcceptedText("");
@@ -213,7 +230,7 @@ export function QuestionForm({ courseId, topics }: { courseId: string; topics: s
         </p>
       )}
       <button type="submit" disabled={pending} className={buttonClass("primary", "lg")}>
-        {pending ? "Saving…" : "Save question"}
+        {pending ? "Saving…" : questionId ? "Save changes" : "Save question"}
       </button>
     </form>
   );

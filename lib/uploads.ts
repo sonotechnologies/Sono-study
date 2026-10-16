@@ -338,7 +338,7 @@ export const ingestUpload: Handler = async (db, job) => {
     let pastPaper = false;
     if (u.type === "photos") {
       const read = await readPhotos(db, u.fileKeys.slice(0, maxPages), course, (done) =>
-        db.update(uploads).set({ statusLine: `Reading photo ${done} of ${u.fileKeys.length}` }).where(eq(uploads.id, u.id)).then(() => {}),
+        db.update(uploads).set({ statusLine: `Read ${done} of ${u.fileKeys.length} photos` }).where(eq(uploads.id, u.id)).then(() => {}),
       );
       pages = read.pages;
       pageCount = u.fileKeys.length;
@@ -643,4 +643,19 @@ export async function recentUploads(db: Db, userId: string, limit = 5) {
     .where(and(eq(uploads.userId, userId), sql`coalesce(${uploads.statusLine}, '') <> 'Uploading'`))
     .orderBy(desc(uploads.createdAt))
     .limit(limit);
+}
+
+// ── Review (brief: "review, edit or delete generated questions") ─────────────
+
+export async function uploadQuestions(db: Db, userId: string, uploadId: string) {
+  const [u] = await db.select().from(uploads).where(and(eq(uploads.id, uploadId), eq(uploads.userId, userId)));
+  if (!u) return null;
+  const sourceId = await questionSourceId(db, u);
+  const rows = await db
+    .select({ q: questions, topic: topics.name })
+    .from(questions)
+    .leftJoin(topics, eq(topics.id, questions.topicId))
+    .where(and(eq(questions.sourceUploadId, sourceId), eq(questions.status, "active")))
+    .orderBy(asc(questions.sourceLabel), asc(questions.createdAt));
+  return { upload: u, editable: sourceId === u.id, questions: rows.map((r) => ({ ...r.q, topic: r.topic })) };
 }

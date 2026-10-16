@@ -1,9 +1,13 @@
 "use server";
 
+import { and, eq } from "drizzle-orm";
+import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { z } from "zod";
 import { getDb } from "@/db";
-import { confirmUpload, prepareUpload, processQueue, UploadError, type PrepareResult } from "@/lib/uploads";
+import { uploads } from "@/db/schema";
+import { ExamError, startAttempt } from "@/lib/exam-engine/service";
+import { confirmUpload, prepareUpload, processQueue, questionSourceId, UploadError, type PrepareResult } from "@/lib/uploads";
 import { requireViewer } from "@/lib/viewer";
 
 const prepareInput = z.object({
@@ -42,4 +46,30 @@ export async function confirmUploadAction(uploadId: string): Promise<{ ok: true 
   }
   after(() => processQueue(db, { budgetMs: 40_000 }).catch((err) => console.error("[jobs]", err)));
   return { ok: true };
+}
+
+/** Ready screen (2g): "Start a 20-question mock" / "Practise" from this upload's questions. */
+export async function startFromUploadAction(uploadId: string, mode: "mock" | "practice") {
+  const viewer = await requireViewer();
+  const db = await getDb();
+  const [u] = await db.select().from(uploads).where(and(eq(uploads.id, uploadId), eq(uploads.userId, viewer.id)));
+  if (!u || u.status !== "ready") redirect(`/upload/${uploadId}`);
+  const sourceId = await questionSourceId(db, u);
+  const count = Math.max(1, Math.min(20, u.questionsMade));
+  let id: string;
+  try {
+    const attempt =
+      mode === "mock"
+        ? await startAttempt(db, viewer.id, {
+            mode: "mock",
+            courseId: u.courseId,
+            config: { count, timeLimitSec: count * 60, topicIds: [], difficulty: "mixed", bankId: null, uploadId: sourceId },
+          })
+        : await startAttempt(db, viewer.id, { mode: "practice", courseId: u.courseId, topicIds: [], count: 10, uploadId: sourceId });
+    id = attempt.id;
+  } catch (err) {
+    if (err instanceof ExamError) redirect(`/upload/${uploadId}?error=${encodeURIComponent(err.message)}`);
+    throw err;
+  }
+  redirect(`/mock/${id}`);
 }

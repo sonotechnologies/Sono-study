@@ -132,11 +132,16 @@ function toSnapshot(r: SnapshotRow): QuestionSnapshot {
  */
 export async function selectQuestions(
   db: Db,
-  opts: { userId: string; courseId: string; topicIds: string[]; difficulty: AttemptConfig["difficulty"]; count: number; seed: string },
+  opts: { userId: string; courseId: string; topicIds: string[]; difficulty: AttemptConfig["difficulty"]; count: number; seed: string; uploadId?: string | null },
 ): Promise<QuestionSnapshot[]> {
   const pool = await loadSnapshots(
     db,
-    and(eq(questions.courseId, opts.courseId), visibleTo(opts.userId), opts.topicIds.length ? inArray(questions.topicId, opts.topicIds) : undefined),
+    and(
+      eq(questions.courseId, opts.courseId),
+      visibleTo(opts.userId),
+      opts.topicIds.length ? inArray(questions.topicId, opts.topicIds) : undefined,
+      opts.uploadId ? eq(questions.sourceUploadId, opts.uploadId) : undefined,
+    ),
   );
   if (!pool.length) return [];
   const seen = await db
@@ -171,7 +176,7 @@ async function requireEnrolled(db: Db, userId: string, courseId: string) {
 
 export type StartInput =
   | { mode: "mock"; courseId: string; config: AttemptConfig }
-  | { mode: "practice"; courseId: string; topicIds: string[]; count?: number }
+  | { mode: "practice"; courseId: string; topicIds: string[]; count?: number; uploadId?: string | null }
   | { mode: "challenge"; challengeId: string };
 
 /** Starts a mock, practice session or challenge. Challenges: one attempt each, same questions for everyone. */
@@ -188,7 +193,7 @@ export async function startAttempt(db: Db, userId: string, input: StartInput, no
     if (c.timeLimitSec !== null && !(c.timeLimitSec >= 60 && c.timeLimitSec <= 4 * 3600)) throw new ExamError("Pick a time limit.");
     config = { ...c, count };
   } else {
-    config = { count: Math.min(input.count ?? 10, 30), timeLimitSec: null, topicIds: input.topicIds, difficulty: "mixed", bankId: null };
+    config = { count: Math.min(input.count ?? 10, 30), timeLimitSec: null, topicIds: input.topicIds, difficulty: "mixed", bankId: null, uploadId: input.uploadId ?? null };
   }
 
   let snapshot: QuestionSnapshot[];
@@ -201,7 +206,7 @@ export async function startAttempt(db: Db, userId: string, input: StartInput, no
     config = { ...config, count: snapshot.length };
     await db.update(banks).set({ attempts: sql`${banks.attempts} + 1` }).where(eq(banks.id, bank.id));
   } else {
-    snapshot = await selectQuestions(db, { userId, courseId: input.courseId, topicIds: config.topicIds, difficulty: config.difficulty, count: config.count, seed });
+    snapshot = await selectQuestions(db, { userId, courseId: input.courseId, topicIds: config.topicIds, difficulty: config.difficulty, count: config.count, seed, uploadId: config.uploadId });
   }
   if (!snapshot.length) throw new ExamError("There are no questions for this yet. Upload notes or pick another topic.");
 
