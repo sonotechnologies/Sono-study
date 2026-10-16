@@ -1,25 +1,73 @@
-# CODING AGENTS: READ THIS FIRST
+# Sono Study
 
-This is a **handoff bundle** from Claude Design (claude.ai/design).
+AI exam-prep PWA for Nigerian university, polytechnic and college of education students: upload notes, practise timed CBT mocks, track weak topics.
 
-A user mocked up designs in HTML/CSS/JS using an AI design tool, then exported this bundle so a coding agent can implement the designs for real.
+- **Build brief:** the product spec this repo follows (milestones, data model, plans and limits).
+- **Designs:** `design/` holds the Claude Design hand-off (HTML prototypes, design brief, chat transcript). Start with `design/project/design_handoff_sono_study/README.md`.
 
-## What you should do — IMPORTANT
+## Stack
 
-**Read the chat transcripts first.** There are 1 chat transcript(s) in `chats/`. The transcripts show the full back-and-forth between the user and the design assistant — they tell you **what the user actually wants** and **where they landed** after iterating. Don't skip them. The final HTML files are the output, but the chat is where the intent lives.
+Next.js 16 (App Router) · TypeScript · Tailwind CSS v4 · Drizzle ORM on Neon Postgres (+ pgvector) · Auth.js (Google + email magic link) · Paystack.
 
-**Read `project/Sono Study Desktop - Account.dc.html` in full.** The user had this file open when they triggered the handoff, so it's almost certainly the primary design they want built. Read it top to bottom — don't skim. Then **follow its imports**: open every file it pulls in (shared components, CSS, scripts) so you understand how the pieces fit together before you start implementing.
+## Run it
 
-**If anything is ambiguous, ask the user to confirm before you start implementing.** It's much cheaper to clarify scope up front than to build the wrong thing.
+```bash
+npm install
+npm run dev        # http://localhost:3000
+```
 
-## About the design files
+No setup needed: without `DATABASE_URL` the app starts an embedded Postgres (PGlite) in `.next/cache/pglite`, migrates it and seeds demo data, and without auth keys you're signed in as the demo student. Payments complete instantly in local dev when no Paystack key is set. `npm run db:reset-local` wipes the local database (it re-seeds on next start).
 
-The design medium is **HTML/CSS/JS** — these are prototypes, not production code. Your job is to **recreate them pixel-perfectly** in whatever technology makes sense for the target codebase (React, Vue, native, whatever fits). Match the visual output; don't copy the prototype's internal structure unless it happens to fit.
+For a real setup copy `.env.example` to `.env.local`, then `npm run db:migrate && npm run db:seed`.
 
-**Don't render these files in a browser or take screenshots unless the user asks you to.** Everything you need — dimensions, colors, layout rules — is spelled out in the source. Read the HTML and CSS directly; a screenshot won't tell you anything they don't.
+```bash
+npm test           # unit + database tests (PGlite, no server needed)
+npm run typecheck
+npm run lint
+```
 
-## Bundle contents
+## What's built
 
-- `README.md` — this file
-- `chats/` — conversation transcripts (read these!)
-- `project/` — the `Project requirements checklist` project files (HTML prototypes, assets, components)
+**Foundation (part of milestone 1)**
+- Design tokens for dark and light themes (`app/globals.css`), fonts, PWA manifest and icons.
+- App shell: a 248px sidebar on desktop and a bottom tab bar on phones.
+- Full data model from the brief in `db/schema.ts`, with migrations in `db/migrations`.
+- Auth.js wiring, plus a demo mode for local dev.
+- Every plan limit and price lives in `lib/plans.ts`.
+
+**Account screens** (designs 6a–6e desktop, 3a–3i phone)
+| Route | What it does |
+| --- | --- |
+| `/leaderboard` | Weekly / all-time / department board per course, ranked by score then time. Your own row is pinned. Live challenge countdown with "Join · remind me". Last challenge result. |
+| `/leaderboard/challenges/[id]` | Closed challenge: placing, Top %, XP and badge, class average, final standings, share. |
+| `/api/share/challenge/[id]` | 1080×1080 share card (PNG) with invite link and QR. |
+| `/profile` | Handle, anonymous toggle, notification toggles and reminder time, plan card, theme, data export, account deletion. |
+| `?paywall=1` on any page | Paywall: bottom sheet on phones, modal on desktop. Paystack checkout. |
+| `/billing/callback`, `/api/paystack/webhook`, `/billing/success` | Verify payments server-side and extend `proUntil`. Passes stack, and a payment is applied only once. |
+| `/upload` | Shows the daily-limit state when today's free uploads are used. Includes the invite link and WhatsApp share. |
+| `/i/[code]` | Invite links. The inviter is recorded when the new student signs up. |
+| `/dev/states` | Dev-only gallery of the queue, limit and payment states and the Home skeleton. |
+
+The leaderboard and profile have static loading skeletons.
+
+## Where the build differs from the designs
+
+The build brief is the source of truth for product rules:
+- **Free plan:** 2 uploads and 40 AI questions a day, with mocks unlimited. The design said "3 uploads and 2 mocks".
+- **Referral reward:** inviting 3 classmates earns a free Week Pass. The design said "invite 2, get +5 uploads".
+- **Leaderboard names:** anonymous by default.
+- **Paywall copy:** "Go Pro" instead of "Go unlimited", because Pro has daily caps.
+- **Semester Pass length:** 150 days from purchase, per the brief, rather than a fixed 28 Feb.
+
+## Next milestones
+
+The Home dashboard, onboarding, landing page, exam engine, upload pipeline, flashcards, tutor and theory grading are placeholders for now. The brief's build order covers them.
+
+These hooks already exist for the exam engine to call:
+- `recordWeeklyResult` (leaderboard)
+- `recordUsage` (daily limits)
+- challenge entries
+
+The exam engine still needs to:
+- Grant the referral reward when a referred student finishes their first mock.
+- Generate the 1080×1920 "new best" story card on results.
