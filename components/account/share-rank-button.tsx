@@ -3,22 +3,23 @@
 import { useState } from "react";
 
 /**
- * Shares the 1080×1080 rank card. Uses the native share sheet with the image
- * (WhatsApp/Instagram status) where supported, otherwise downloads the image.
+ * Shares a share-card image. Uses the native share sheet with the image
+ * (WhatsApp/Instagram status) where supported, otherwise downloads it.
  */
-export function ShareRankButton({
-  challengeId,
+export function ShareImageButton({
+  imageUrl,
+  fileName = "sono-study.png",
   text,
   className,
   children,
 }: {
-  challengeId: string;
+  imageUrl: string;
+  fileName?: string;
   text: string;
   className?: string;
   children: React.ReactNode;
 }) {
   const [busy, setBusy] = useState(false);
-  const imageUrl = `/api/share/challenge/${challengeId}`;
 
   async function share() {
     setBusy(true);
@@ -27,7 +28,7 @@ export function ShareRankButton({
         if (!r.ok) throw new Error(String(r.status));
         return r.blob();
       });
-      const file = new File([blob], "sono-study-rank.png", { type: "image/png" });
+      const file = new File([blob], fileName, { type: "image/png" });
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file], text });
         return;
@@ -49,4 +50,9 @@ export function ShareRankButton({
       {busy ? "Preparing…" : children}
     </button>
   );
+}
+
+/** 1080×1080 challenge rank card. */
+export function ShareRankButton({ challengeId, ...rest }: { challengeId: string; text: string; className?: string; children: React.ReactNode }) {
+  return <ShareImageButton imageUrl={`/api/share/challenge/${challengeId}`} fileName="sono-study-rank.png" {...rest} />;
 }

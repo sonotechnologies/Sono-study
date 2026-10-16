@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // The floating dev badge sits over the bottom action bars of phone layouts.
+  devIndicators: false,
   // Embedded Postgres for local dev is loaded from node_modules, not bundled.
   serverExternalPackages: ["@electric-sql/pglite", "@electric-sql/pglite-pgvector"],
   async headers() {

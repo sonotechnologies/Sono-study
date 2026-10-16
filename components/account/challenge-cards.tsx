@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { joinChallengeAction } from "@/app/(app)/leaderboard/actions";
+import { startChallengeAction } from "@/app/(app)/courses/actions";
 import { Countdown } from "@/components/account/countdown";
 import { ShareRankButton } from "@/components/account/share-rank-button";
 import { buttonClass, Card } from "@/components/ui/primitives";
@@ -35,9 +36,11 @@ export function UpcomingChallengeCard({ data, className }: { data: UpcomingChall
         </span>
       </div>
       {live ? (
-        <Link href="/courses" className={buttonClass("inverse", "sm", "lg:mt-1 lg:h-12 lg:text-[15px]")}>
-          Take the challenge
-        </Link>
+        <form action={startChallengeAction.bind(null, challenge.id)}>
+          <button type="submit" className={buttonClass("inverse", "sm", "w-full text-[15px] lg:mt-1 lg:h-12")}>
+            Take the challenge
+          </button>
+        </form>
       ) : viewerJoined ? (
         <p className={buttonClass("inverse", "sm", "pointer-events-none lg:mt-1 lg:h-12 lg:text-[15px]")}>
           <Check size={18} strokeWidth={2.5} aria-hidden /> Joined · we&apos;ll remind you

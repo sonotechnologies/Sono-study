@@ -2,6 +2,7 @@ import { count } from "drizzle-orm";
 import type { Db } from "./index";
 import * as s from "./schema";
 import { SCHOOLS } from "./schools-list";
+import { ensureQuestionBank } from "./question-bank";
 import { addDays, lagosDate, weekStart } from "../lib/time";
 
 export const DEMO_USER_ID = "demo-tolu";
@@ -37,7 +38,10 @@ export async function ensureSchools(db: Db) {
 export async function seedIfEmpty(db: Db, now: Date = new Date()) {
   await ensureSchools(db);
   const [{ n }] = await db.select({ n: count() }).from(s.courses);
-  if (n > 0) return false;
+  if (n > 0) {
+    await ensureQuestionBank(db);
+    return false;
+  }
   await seed(db, now);
   return true;
 }
@@ -181,8 +185,10 @@ export async function seed(db: Db, now: Date = new Date()) {
 
   // One referred classmate has finished a mock (referral progress 1 of 3).
   await db.insert(s.mockAttempts).values({
-    userId: peers[0].id, courseId: gst.id, questionIds: [], durationSec: 1800, submittedAt: now, score: 29, mode: "mock",
+    userId: peers[0].id, courseId: gst.id, questionIds: [], durationSec: 1800, submittedAt: now, score: 29, maxScore: 30, status: "submitted", mode: "mock",
   });
+
+  await ensureQuestionBank(db);
 
   // Today's free uploads already used — drives the daily-limit state.
   await db.insert(s.aiUsage).values({ userId: DEMO_USER_ID, date: lagosDate(now), action: "upload", count: 2 });

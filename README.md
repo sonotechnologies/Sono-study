@@ -22,6 +22,7 @@ For a real setup copy `.env.example` to `.env.local`, then `npm run db:migrate &
 
 ```bash
 npm test           # unit + database tests (PGlite, no server needed)
+npm run build && npm run e2e:m2   # Milestone 2 acceptance in a real browser
 npm run typecheck
 npm run lint
 ```
@@ -48,6 +49,47 @@ npm run lint
   - Every plan limit and price in `lib/plans.ts`.
 
 **Local testing tip:** in demo mode, `/dev/new-student` signs you in as a brand-new student so you can walk through onboarding. `/dev/new-student?reset=1` switches back to the demo student. The route is disabled whenever real sign-in is configured.
+
+**Milestone 2 — Exam engine** ✅
+
+The engine in `lib/exam-engine` is ported from SonoCBT's exam runtime: `lib/exams/rules.ts`, `local.ts`, `runtime.ts`, `components/exam/runtime/idb.ts` and `public/exam-sw.js`.
+- **Kept from SonoCBT:**
+  - server-side marking from frozen question snapshots
+  - per-student seeded option order
+  - a server-owned deadline, with the server auto-submitting overdue mocks itself
+  - answers written to the phone (IndexedDB) first, then synced with sequence numbers, so retries and out-of-order requests are harmless
+  - late answers kept aside but not marked
+  - offline reopening of the mock page
+  - SonoCBT's own tests, ported
+- **Stripped, as the brief asks:** PINs, invigilation, device lock, IP rules, integrity events, sections and passages.
+- **One deliberate change:** for **mocks**, answers made offline *before* the deadline still count if the phone reconnects up to 10 minutes after it. Answers are stamped with the server's clock as the device knows it. **Challenges** keep SonoCBT's strict 90-second grace because they rank students against each other.
+- **Question types:** single choice, multiple answer (all-or-nothing or partial), true/false, and fill-in (case-insensitive, "0.5" = "1/2").
+- **Screens:**
+
+| Route | Design |
+| --- | --- |
+| `/courses/[id]/mock` | 2h — mock setup: count, time, topics with mastery dots and "Weak only", difficulty, or a shared bank |
+| `/mock/[id]` | 1g/1i phone, 4c desktop — the exam. The timer turns amber under 5 min and pulses at 1:00. Navigator sheet or side panel, submit/leave confirmations, offline banner, A–E / ← → / F keys, back button asks first |
+| `/mock/[id]` (practice) | 2i — instant feedback, "3 in a row", explanation and source |
+| `/results/[id]` | 1j with 1k's "topics to fix first" cards, and 1l when you beat your best (with a 1080×1920 share card, 3h); 4d on desktop |
+| `/results/[id]/review/[n]` | question review |
+| `/courses` | interim course list: start a mock, "Fix weak topics" (the 3 lowest-mastery topics), leaderboard, add a question |
+| `/courses/[id]/questions/new` | manual question entry (brief: for testing) |
+
+- **What happens when a mock is submitted:**
+  - the weekly leaderboard updates (20+ question mocks)
+  - challenge results are recorded (once per student, same questions for everyone, capped at the challenge window)
+  - XP is added
+  - the streak updates, in Lagos days
+  - topic mastery is recomputed from the latest 20 answers per topic, newer answers weighing more
+  - the referral reward is granted: a free Week Pass for every 3 invited classmates who finish a mock
+- **Home:** shows "Continue mock" while a mock is running.
+- **Seed data:** 300 sample questions (60 each for GST 111, MTH 101, CHM 101, MAC 111 and PHY 101, six topics per course, all with explanations), plus one shared sample paper per course.
+- **Acceptance, checked in a real browser against a production build:** `npm run build && npm run e2e:m2`. It shows:
+  - a 30-question mock auto-submits at zero
+  - killing the server mid-mock: answering continues, the page reloads with no connection with all answers intact, and everything syncs when the server returns
+  - the per-topic breakdown adds up to the score and matches the review list
+- **Tests:** the same cases are also covered at service level in `tests/exam-service.test.ts`.
 
 **Account screens** (designs 6a–6e desktop, 3a–3i phone)
 | Route | What it does |
@@ -77,19 +119,10 @@ The build brief is the source of truth for product rules:
 ## Next milestones
 
 The brief's build order from here:
-- **Milestone 2:** exam engine, mocks, practice, results.
 - **Milestone 3:** upload and AI pipeline.
-- **Milestone 4:** shared banks and mastery.
+- **Milestone 4:** shared banks and mastery: the full course page, reporting, and the study plan with readiness.
 - **Milestone 5:** flashcards, tutor and theory grading.
 
-The Account and social screens in Milestone 6 were built early, from the designs. Home is a simple version until the exam engine provides readiness, the daily plan and "continue mock". Landing page 4a comes with the marketing work.
+The Account and social screens in Milestone 6 were built early, from the designs. Landing page 4a comes with the marketing work.
 
-These hooks already exist for the exam engine to call:
-- `recordWeeklyResult` (leaderboard)
-- `recordUsage` (daily limits)
-- challenge entries
-
-The exam engine still needs to:
-- Grant the referral reward when a referred student finishes their first mock.
-- Generate the 1080×1920 "new best" story card on results.
-- Cache mocks and flashcards in the service worker for offline use.
+**Local testing tip:** in demo mode, `/courses/<id>/mock?quick=1` adds a 1-minute timer for trying auto-submit.

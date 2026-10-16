@@ -6,6 +6,9 @@ import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { Card, Pill } from "@/components/ui/primitives";
 import { displayCourseCode } from "@/lib/format";
 import { getCourseBoard } from "@/lib/leaderboard";
+import { inProgressAttempt } from "@/lib/exam-engine/service";
+import { formatClock } from "@/lib/format";
+import { ButtonLink } from "@/components/ui/primitives";
 import { requireViewer } from "@/lib/viewer";
 
 export const metadata: Metadata = { title: "Home" };
@@ -13,6 +16,10 @@ export const metadata: Metadata = { title: "Home" };
 function greeting(now = new Date()) {
   const hour = (now.getUTCHours() + 1) % 24; // Lagos
   return hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+}
+
+function secondsUntil(d: Date) {
+  return Math.max(0, Math.round((d.getTime() - Date.now()) / 1000));
 }
 
 function daysUntil(date: string) {
@@ -26,7 +33,12 @@ export default async function HomePage() {
   const first = (viewer.name ?? viewer.handle ?? "there").split(" ")[0];
   const course = viewer.courses[0];
   const db = await getDb();
-  const board = course ? await getCourseBoard(db, { courseId: course.id, scope: "week", viewer, limit: 1 }) : null;
+  const [board, running] = await Promise.all([
+    course ? getCourseBoard(db, { courseId: course.id, scope: "week", viewer, limit: 1 }) : null,
+    inProgressAttempt(db, viewer.id),
+  ]);
+  const runningCourse = running ? viewer.courses.find((c) => c.id === running.courseId) : null;
+  const runningLeft = running?.endsAt ? secondsUntil(running.endsAt) : null;
   const exams = viewer.courses.filter((c) => c.examDate);
 
   return (
@@ -47,6 +59,30 @@ export default async function HomePage() {
           <Pill className="hidden lg:inline-flex">{viewer.xp.toLocaleString("en-NG")} XP</Pill>
         </div>
       </header>
+
+      {running && (
+        <section aria-label="Continue mock" className="flex items-center gap-4 rounded-2xl bg-accent-soft p-4 lg:p-5">
+          <div className="flex flex-1 flex-col gap-0.5">
+            <span className="font-display text-lg font-bold">Continue {running.mode === "challenge" ? "challenge" : "mock"}</span>
+            <span className="text-sm text-ink-muted">
+              {runningCourse ? displayCourseCode(runningCourse.code) : ""} · Q{running.currentIndex + 1} of {running.questionIds.length}
+              {runningLeft !== null && ` · ${formatClock(runningLeft)} left`}
+            </span>
+          </div>
+          <ButtonLink href={`/mock/${running.id}`}>Resume</ButtonLink>
+        </section>
+      )}
+
+      {!running && course && (
+        <div className="flex flex-col gap-2 lg:flex-row">
+          <ButtonLink href={`/courses/${course.id}/mock`} size="lg" className="lg:w-auto">
+            Start a {displayCourseCode(course.code)} mock
+          </ButtonLink>
+          <ButtonLink href="/courses" variant="secondary" size="lg" className="lg:w-auto">
+            Practise a topic
+          </ButtonLink>
+        </div>
+      )}
 
       <InstallPrompt />
 

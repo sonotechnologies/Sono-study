@@ -2,9 +2,10 @@
  * - Static build assets and fonts: cache-first (they're content-hashed).
  * - Pages: network-first, falling back to the last copy seen on this phone, then /offline.
  * - Everything else (server actions, RSC payloads, APIs, payments): network only.
- * Offline mocks and flashcards add their own caches in later milestones.
+ * - Mocks: the exam page asks to be saved ("warm", ported from SonoCBT's exam
+ *   service worker) so it reopens with no connection; answers live in IndexedDB.
  */
-const VERSION = "v1";
+const VERSION = "v2";
 const STATIC_CACHE = `sono-static-${VERSION}`;
 const PAGE_CACHE = `sono-pages-${VERSION}`;
 const PRECACHE = ["/offline", "/icon-192.png", "/manifest.webmanifest"];
@@ -68,5 +69,56 @@ self.addEventListener("fetch", (event) => {
         })
         .catch(async () => (await caches.match(req, { cacheName: PAGE_CACHE })) || (await caches.match("/offline"))),
     );
+  }
+});
+
+const isAsset = (u) => u.pathname.startsWith("/_next/static/") || /\.(png|svg|woff2?)$/.test(u.pathname);
+const isMockPage = (u) => /^\/mock\/[^/]+\/?$/.test(u.pathname);
+
+self.addEventListener("message", (event) => {
+  const msg = event.data || {};
+  if (msg.type === "warm" && Array.isArray(msg.urls)) {
+    // The mock page lists its own URL and every file it uses: files first, the page last.
+    event.waitUntil(
+      (async () => {
+        const pages = await caches.open(PAGE_CACHE);
+        const assets = await caches.open(STATIC_CACHE);
+        const urls = [...new Set(msg.urls)]
+          .map((u) => {
+            try {
+              return new URL(u, self.location.origin);
+            } catch {
+              return null;
+            }
+          })
+          .filter((u) => u && u.origin === self.location.origin);
+        let missed = 0;
+        await Promise.all(
+          urls.filter(isAsset).map(async (u) => {
+            try {
+              if (await assets.match(u.href)) return;
+              const res = await fetch(u.href);
+              if (res.ok) await assets.put(u.href, res);
+              else missed++;
+            } catch {
+              missed++;
+            }
+          }),
+        );
+        for (const u of urls.filter(isMockPage)) {
+          try {
+            const res = await fetch(u.href, { credentials: "same-origin" });
+            if (res.ok && !res.redirected) await pages.put(u.href, res);
+            else missed++;
+          } catch {
+            missed++;
+          }
+        }
+        event.source?.postMessage({ type: "warmed", ok: missed === 0 });
+      })(),
+    );
+  } else if (msg.type === "forget" && msg.url) {
+    // Submitted: the saved mock page is no longer needed.
+    event.waitUntil(caches.open(PAGE_CACHE).then((c) => c.delete(new URL(msg.url, self.location.origin).href)));
   }
 });

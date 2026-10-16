@@ -1,4 +1,5 @@
 import { relations, sql } from "drizzle-orm";
+import type { AnswerKey, AttemptResponse, QuestionOption, QuestionSnapshot } from "@/lib/exam-engine/types";
 import {
   boolean,
   date,
@@ -30,6 +31,7 @@ export const uploadVisibility = pgEnum("upload_visibility", ["private", "contrib
 export const questionType = pgEnum("question_type", ["single", "multiple", "true_false", "fill_in", "theory"]);
 export const questionStatus = pgEnum("question_status", ["active", "hidden"]);
 export const attemptMode = pgEnum("attempt_mode", ["mock", "practice", "challenge"]);
+export const attemptStatus = pgEnum("attempt_status", ["in_progress", "submitted", "auto_submitted"]);
 export const tutorRole = pgEnum("tutor_role", ["user", "assistant"]);
 export const jobStatus = pgEnum("job_status", ["queued", "running", "done", "failed"]);
 export const passProduct = pgEnum("pass_product", ["semester", "week"]);
@@ -86,6 +88,8 @@ export const users = pgTable(
     anonymous: boolean("anonymous").notNull().default(true),
     referralCode: text("referral_code").unique(),
     referredById: text("referred_by_id"),
+    /** Free Pro weeks already granted for referrals (one per REFERRAL.invitesNeeded). */
+    referralRewards: integer("referral_rewards").notNull().default(0),
     notifyDailyReminder: boolean("notify_daily_reminder").notNull().default(true),
     reminderTime: text("reminder_time").notNull().default("20:00"),
     notifyStreak: boolean("notify_streak").notNull().default(true),
@@ -211,11 +215,16 @@ export const questions = pgTable(
       .references(() => courses.id, { onDelete: "cascade" }),
     topicId: text("topic_id").references(() => topics.id),
     sourceUploadId: text("source_upload_id").references(() => uploads.id, { onDelete: "set null" }),
+    /** Student who typed it in (manual entry); null for generated or seeded questions. */
+    createdById: text("created_by_id").references(() => users.id, { onDelete: "set null" }),
     type: questionType("type").notNull().default("single"),
     stem: text("stem").notNull(),
-    options: jsonb("options").$type<string[]>(),
-    answer: jsonb("answer").$type<string | number | number[] | boolean>().notNull(),
+    /** Choice questions: options with stable ids (so shuffling and answers survive edits). */
+    options: jsonb("options").$type<QuestionOption[]>().notNull().default([]),
+    answer: jsonb("answer").$type<AnswerKey>().notNull(),
     explanation: text("explanation"),
+    /** Where in the student's notes this comes from, e.g. "Week 2 slides · p.8". */
+    sourceLabel: text("source_label"),
     difficulty: integer("difficulty").notNull().default(2),
     rubric: jsonb("rubric").$type<{ point: string; marks: number }[]>(),
     isPastQuestion: boolean("is_past_question").notNull().default(false),
@@ -244,6 +253,17 @@ export const banks = pgTable("banks", {
 
 // ── Exam engine ──────────────────────────────────────────────────────────────
 
+export type AttemptConfig = {
+  count: number;
+  /** null = untimed */
+  timeLimitSec: number | null;
+  topicIds: string[];
+  difficulty: "mixed" | "easier" | "harder";
+  bankId: string | null;
+};
+
+export type LateAnswer = { questionId: string; response: AttemptResponse | null; clientSeq: number; receivedAt: string };
+
 export const mockAttempts = pgTable(
   "mock_attempts",
   {
@@ -255,17 +275,35 @@ export const mockAttempts = pgTable(
       .notNull()
       .references(() => courses.id),
     bankId: text("bank_id").references(() => banks.id),
-    challengeId: text("challenge_id"),
+    challengeId: text("challenge_id").references(() => challenges.id, { onDelete: "set null" }),
     questionIds: text("question_ids").array().notNull(),
+    /** Questions frozen at start (answer keys included) — server only. */
+    snapshot: jsonb("snapshot").$type<QuestionSnapshot[]>().notNull().default([]),
+    optionOrder: jsonb("option_order").$type<Record<string, string[]>>().notNull().default({}),
+    config: jsonb("config").$type<AttemptConfig>(),
     durationSec: integer("duration_sec"),
     startedAt: ts("started_at").notNull().defaultNow(),
-    /** Server-side end time is final. */
+    /** Server-side end time is final. null = untimed (practice). */
     endsAt: ts("ends_at"),
     submittedAt: ts("submitted_at"),
-    score: integer("score"),
+    status: attemptStatus("status").notNull().default("in_progress"),
+    submitReason: text("submit_reason").$type<"student" | "timeout">(),
+    score: real("score"),
+    maxScore: real("max_score"),
+    answeredCount: integer("answered_count").notNull().default(0),
+    currentIndex: integer("current_index").notNull().default(0),
+    /** Highest device sequence number applied. */
+    clientSeq: integer("client_seq").notNull().default(0),
+    lastSeenAt: ts("last_seen_at"),
+    lateAnswers: jsonb("late_answers").$type<LateAnswer[]>(),
+    xpEarned: integer("xp_earned"),
     mode: attemptMode("mode").notNull().default("mock"),
   },
-  (t) => [index("mock_attempts_user_course_idx").on(t.userId, t.courseId)],
+  (t) => [
+    index("mock_attempts_user_course_idx").on(t.userId, t.courseId),
+    index("mock_attempts_user_status_idx").on(t.userId, t.status),
+    uniqueIndex("mock_attempts_challenge_user_idx").on(t.challengeId, t.userId),
+  ],
 );
 
 export const attemptAnswers = pgTable(
@@ -278,10 +316,13 @@ export const attemptAnswers = pgTable(
     questionId: text("question_id")
       .notNull()
       .references(() => questions.id),
-    answer: jsonb("answer"),
+    answer: jsonb("answer").$type<AttemptResponse | null>(),
     isCorrect: boolean("is_correct"),
+    marksAwarded: real("marks_awarded"),
     flagged: boolean("flagged").notNull().default(false),
     timeSpentSec: integer("time_spent_sec").notNull().default(0),
+    clientSeq: integer("client_seq").notNull().default(0),
+    answeredAt: ts("answered_at"),
   },
   (t) => [uniqueIndex("attempt_answers_attempt_question_idx").on(t.attemptId, t.questionId)],
 );
@@ -414,8 +455,8 @@ export const leaderboardEntries = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    score: integer("score").notNull(),
-    maxScore: integer("max_score").notNull(),
+    score: real("score").notNull(),
+    maxScore: real("max_score").notNull(),
     timeSec: integer("time_sec").notNull(),
     mocks: integer("mocks").notNull().default(1),
     updatedAt: ts("updated_at").notNull().defaultNow(),
@@ -498,3 +539,5 @@ export type Course = typeof courses.$inferSelect;
 export type Challenge = typeof challenges.$inferSelect;
 export type Payment = typeof payments.$inferSelect;
 export type School = typeof schools.$inferSelect;
+export type MockAttempt = typeof mockAttempts.$inferSelect;
+export type Question = typeof questions.$inferSelect;
