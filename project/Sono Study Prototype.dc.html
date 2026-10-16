@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0B0D17;--surface:#141726;--surface-2:#1C2033;--border:#262B42;--ink:#EEF0FA;--ink-muted:#9499B5;--accent:#8B7CFF;--accent-soft:#25204D;--spark:#C6F24E;--correct:#3DD68C;--wrong:#FF6B6B;--flag:#FFB547;--on-accent:#0B0D17;--canvas:#06070D;--scrim:rgba(5,6,12,.72);--correct-soft:rgba(61,214,140,.12);--wrong-soft:rgba(255,107,107,.12)}
+[data-theme="light"]{--bg:#F6F6FB;--surface:#FFFFFF;--surface-2:#EEEEF6;--border:#E1E1EC;--ink:#10122B;--ink-muted:#5D6180;--accent:#5B4BE6;--accent-soft:#ECE9FF;--spark:#4E8A00;--correct:#13804B;--wrong:#C7362F;--flag:#A86600;--on-accent:#FFFFFF;--canvas:#E4E4EE;--scrim:rgba(16,18,43,.45);--correct-soft:#E3F4EA;--wrong-soft:#FBE7E6}
+body{margin:0;background:var(--canvas)}
+a{color:var(--accent)}a:hover{color:var(--ink)}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="min-height:100vh;background:var(--canvas);display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;font-family:Inter,system-ui,sans-serif;color:var(--ink);font-variant-numeric:tabular-nums">
+<div data-screen-label="{{ screenLabel }}" style="width:360px;height:780px;border-radius:28px;overflow:hidden;background:var(--bg);border:1px solid var(--border);display:flex;flex-direction:column;position:relative">
+<div style="height:28px;flex:none;padding:0 20px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--ink-muted)"><span>22:47</span><span>4G · 61%</span></div>
+
+<sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+<div style="flex:1;display:flex;flex-direction:column;min-height:0">
+<div style="padding:12px 20px 0;display:flex;justify-content:space-between;align-items:center">
+<div style="font-family:'Space Grotesk';font-size:18px;font-weight:700">Hey Tolu</div>
+<div style="display:flex;gap:6px;align-items:center">
+<div style="display:flex;align-items:center;gap:4px;padding:6px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--border)"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:var(--spark);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg><span style="font-family:'Space Grotesk';font-weight:700;font-size:14px;color:var(--spark)">{{ streak }}</span><span style="font-size:13px;color:var(--ink-muted);margin-left:4px">· {{ xp }} XP</span></div>
+<button onClick="{{ toggleTheme }}" aria-label="Toggle theme" style="width:36px;height:36px;border-radius:999px;background:var(--surface);border:1px solid var(--border);display:grid;place-items:center"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink);stroke-width:2"><circle cx="12" cy="12" r="5"></circle><path d="M12 7a5 5 0 0 1 0 10z" style="fill:var(--ink);stroke:none"></path></svg></button>
+</div>
+</div>
+<div style="flex:1;padding:16px 20px;display:flex;flex-direction:column;gap:16px;overflow:auto">
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;display:flex;flex-direction:column;align-items:center;gap:14px">
+<div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:13px;color:var(--ink-muted)">Next exam · Mon 9:00</span><span style="font-family:'Space Grotesk';font-size:22px;font-weight:700">GST 111</span></div>
+<div style="position:relative;width:152px;height:152px">
+<svg width="152" height="152" viewBox="0 0 152 152"><circle cx="76" cy="76" r="66" style="fill:none;stroke:var(--surface-2);stroke-width:12"></circle><circle cx="76" cy="76" r="66" transform="rotate(-90 76 76)" style="fill:none;stroke:var(--accent);stroke-width:12;stroke-linecap:round;stroke-dasharray:414.7;stroke-dashoffset:{{ readyOffset }};transition:stroke-dashoffset 250ms ease-out"></circle></svg>
+<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><span style="font-family:'Space Grotesk';font-size:40px;font-weight:700;line-height:1">{{ readiness }}%</span><span style="font-size:13px;color:var(--ink-muted)">ready</span></div>
+</div>
+<span style="font-size:13px;color:var(--spark);font-weight:600">{{ readyNote }}</span>
+<button onClick="{{ startMock }}" style="width:100%;height:52px;border-radius:12px;background:var(--accent);color:var(--on-accent);font-weight:600;font-size:16px">Start {{ qCount }}-question mock</button>
+</div>
+<div style="display:flex;gap:8px">
+<button onClick="{{ startCards }}" style="flex:1;min-height:48px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:14px">Cards due</span><span style="font-family:'Space Grotesk';font-weight:700">{{ cardsDue }}</span></button>
+<button onClick="{{ startPractice }}" style="flex:1;min-height:48px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:14px">Practise</span><span style="font-size:13px;color:var(--wrong);font-weight:600">weak</span></button>
+<div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:14px">Plan</span><span style="font-family:'Space Grotesk';font-weight:700">{{ planDone }}/4</span></div>
+</div>
+<sc-if value="{{ hasLast }}" hint-placeholder-val="{{ false }}">
+<button onClick="{{ openResults }}" style="background:var(--accent-soft);border-radius:16px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;text-align:left"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;color:var(--ink-muted)">Last mock</span><span style="font-family:'Space Grotesk';font-weight:700;font-size:16px">GST 111 · {{ lastScore }}</span></div><span style="font-size:14px;font-weight:600;color:var(--accent)">See results</span></button>
+</sc-if>
+<div style="font-size:13px;color:var(--ink-muted);line-height:1.5">Mock rules: {{ qCount }} questions, {{ timerMinutes }} minutes. Leaving mid-mock asks you to confirm.</div>
+</div>
+<div style="height:64px;flex:none;border-top:1px solid var(--border);background:var(--surface);display:grid;grid-template-columns:repeat(5,1fr);align-items:center;font-size:11px;color:var(--ink-muted)">
+<div style="display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--accent)"><svg width="22" height="22" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:1.75;stroke-linejoin:round"><path d="M3 10l9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>Home</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:3px"><svg width="22" height="22" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:1.75;stroke-linejoin:round"><path d="M2 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H2z"></path><path d="M22 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z"></path></svg>Courses</div>
+<div style="display:flex;justify-content:center"><div style="width:48px;height:48px;border-radius:16px;background:var(--accent);display:grid;place-items:center"><svg width="22" height="22" viewBox="0 0 24 24" style="fill:none;stroke:var(--on-accent);stroke-width:2;stroke-linecap:round"><path d="M12 5v14M5 12h14"></path></svg></div></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:3px"><svg width="22" height="22" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:1.75;stroke-linejoin:round"><path d="m12 2 10 5-10 5L2 7z"></path><path d="m2 17 10 5 10-5"></path><path d="m2 12 10 5 10-5"></path></svg>Cards</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:3px"><svg width="22" height="22" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:1.75"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>Profile</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isMock }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;min-height:0">
+<div style="height:56px;flex:none;padding:0 12px 0 4px;display:flex;align-items:center;gap:4px;border-bottom:1px solid var(--border)">
+<button onClick="{{ askLeave }}" aria-label="Leave mock" style="width:48px;height:48px;display:grid;place-items:center"><svg width="22" height="22" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+<div style="flex:1;display:flex;flex-direction:column"><span style="font-weight:600;font-size:15px">GST 111 · Mock</span><span style="font-size:12px;color:var(--ink-muted)">{{ qCount }} questions</span></div>
+<div style="display:flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:999px;box-sizing:border-box;background:{{ timerBg }};border:{{ timerBorder }};color:{{ timerColor }};transform:scale({{ timerScale }});transition:transform 200ms ease-out"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg><span style="font-family:'Space Grotesk';font-weight:700;font-size:16px">{{ timeLeft }}</span></div>
+</div>
+<div style="height:3px;flex:none;background:var(--surface-2)"><div style="height:100%;background:var(--accent);width:{{ progressPct }}"></div></div>
+<div style="flex:1;padding:24px 20px;display:flex;flex-direction:column;gap:20px;overflow:auto">
+<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:'Space Grotesk';font-weight:700;font-size:14px;color:var(--ink-muted)">Question {{ qNum }} of {{ qCount }}</span><span style="font-size:12px;color:var(--ink-muted);padding:4px 8px;border:1px solid var(--border);border-radius:999px">{{ q.topic }}</span></div>
+<div style="font-size:17px;line-height:1.6;text-wrap:pretty">{{ q.stem }}</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<sc-for list="{{ options }}" as="o" hint-placeholder-count="4">
+<button onClick="{{ o.onClick }}" style="min-height:52px;border-radius:12px;box-sizing:border-box;background:{{ o.rowBg }};border:1px solid {{ o.rowBorder }};display:flex;align-items:center;gap:12px;padding:10px 14px;text-align:left"><span style="flex:none;width:28px;height:28px;border-radius:999px;box-sizing:border-box;display:grid;place-items:center;font-size:13px;font-weight:700;background:{{ o.bubbleBg }};color:{{ o.bubbleFg }};border:{{ o.bubbleBorder }}">{{ o.letter }}</span><span style="font-size:16px;line-height:1.4">{{ o.text }}</span></button>
+</sc-for>
+</div>
+</div>
+<div style="padding:12px 16px 16px;flex:none;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center">
+<button onClick="{{ toggleFlag }}" aria-label="Flag question" style="width:48px;height:48px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;box-sizing:border-box;border:{{ flagBorder }}"><svg width="20" height="20" viewBox="0 0 24 24" style="stroke-width:1.75;stroke-linejoin:round;stroke:{{ flagStroke }};fill:{{ flagFill }}"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><path d="M4 22v-7"></path></svg></button>
+<button onClick="{{ openNav }}" style="height:48px;padding:0 14px;border-radius:12px;background:var(--surface-2);display:flex;align-items:center;gap:8px;font-family:'Space Grotesk';font-weight:700;font-size:14px"><svg width="18" height="18" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink);stroke-width:1.75"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>{{ answeredCount }}/{{ qCount }}</button>
+<button onClick="{{ prev }}" aria-label="Previous" style="width:48px;height:48px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;margin-left:auto;opacity:{{ prevOpacity }}"><svg width="20" height="20" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="m15 18-6-6 6-6"></path></svg></button>
+<button onClick="{{ next }}" style="height:48px;padding:0 20px;border-radius:12px;background:var(--accent);color:var(--on-accent);font-weight:600;font-size:15px">{{ nextLabel }}</button>
+</div>
+
+<sc-if value="{{ navOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeSheets }}" style="position:absolute;inset:84px 0 0 0;background:var(--scrim)"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-radius:24px 24px 0 0;padding:12px 20px 20px;display:flex;flex-direction:column;gap:16px">
+<div style="width:40px;height:4px;border-radius:999px;background:var(--border);align-self:center"></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:'Space Grotesk';font-size:18px;font-weight:700">All questions</span><span style="font-size:13px;color:var(--ink-muted)">{{ timeLeft }} left</span></div>
+<div style="display:flex;gap:14px;font-size:13px;color:var(--ink-muted)">
+<span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:4px;background:var(--accent)"></span>Answered {{ answeredCount }}</span>
+<span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:4px;border:2px solid var(--flag);box-sizing:border-box"></span>Flagged {{ flaggedCount }}</span>
+<span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:4px;background:var(--surface-2)"></span>Blank {{ blankCount }}</span>
+</div>
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
+<sc-for list="{{ navCells }}" as="c" hint-placeholder-count="10"><button onClick="{{ c.onClick }}" style="height:48px;border-radius:10px;font-size:15px;font-weight:600;box-sizing:border-box;background:{{ c.bg }};color:{{ c.fg }};border:{{ c.border }}">{{ c.n }}</button></sc-for>
+</div>
+<button onClick="{{ askSubmit }}" style="height:52px;border-radius:12px;background:var(--accent);color:var(--on-accent);font-size:16px;font-weight:600">Submit {{ answeredCount }} of {{ qCount }}</button>
+</div>
+</sc-if>
+
+<sc-if value="{{ confirmOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeSheets }}" style="position:absolute;inset:0;background:var(--scrim)"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-radius:24px 24px 0 0;padding:24px 20px 20px;display:flex;flex-direction:column;gap:12px">
+<div style="font-family:'Space Grotesk';font-size:22px;font-weight:700">{{ confirmTitle }}</div>
+<div style="font-size:15px;line-height:1.6;color:var(--ink-muted)">{{ confirmBody }}</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:8px">
+<button onClick="{{ closeSheets }}" style="height:52px;border-radius:12px;background:var(--surface-2);font-size:15px;font-weight:600">{{ confirmCancel }}</button>
+<button onClick="{{ confirmAction }}" style="height:52px;border-radius:12px;background:var(--accent);color:var(--on-accent);font-size:15px;font-weight:600">{{ confirmOk }}</button>
+</div>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ isResults }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;min-height:0">
+<div style="flex:1;padding:16px 20px 20px;display:flex;flex-direction:column;gap:20px;overflow:auto">
+<div style="display:flex;justify-content:space-between;align-items:center"><button onClick="{{ goHome }}" style="font-size:14px;color:var(--ink-muted);height:44px;display:flex;align-items:center;gap:4px"><svg width="18" height="18" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="m15 18-6-6 6-6"></path></svg>Home</button><span style="font-size:14px;color:var(--ink-muted)">GST 111 · Mock results</span></div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;align-items:baseline;gap:6px"><span style="font-family:'Space Grotesk';font-size:56px;font-weight:700;line-height:1;letter-spacing:-0.02em">{{ shownScore }}</span><span style="font-family:'Space Grotesk';font-size:28px;font-weight:600;color:var(--ink-muted)">/{{ qCount }}</span></div>
+<div style="font-size:16px;line-height:1.5;text-wrap:pretty">{{ resultLine }}</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;color:var(--ink-muted)">Time</span><span style="font-family:'Space Grotesk';font-weight:700;font-size:16px">{{ timeUsed }}</span></div>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;color:var(--ink-muted)">Score</span><span style="font-family:'Space Grotesk';font-weight:700;font-size:16px">{{ scorePct }}</span></div>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;color:var(--ink-muted)">Earned</span><span style="font-family:'Space Grotesk';font-weight:700;font-size:16px;color:var(--spark)">+{{ xpEarned }} XP</span></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-size:13px;color:var(--ink-muted)">By topic</div>
+<sc-for list="{{ topics }}" as="t" hint-placeholder-count="5"><div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;font-size:14px"><span>{{ t.name }}</span><span style="color:{{ t.color }};font-weight:600">{{ t.score }} · {{ t.label }}</span></div><div style="height:6px;border-radius:999px;background:var(--surface-2)"><div style="height:100%;border-radius:999px;width:{{ t.pct }};background:{{ t.color }}"></div></div></div></sc-for>
+</div>
+<div style="display:flex;flex-direction:column;gap:4px">
+<div style="font-size:13px;color:var(--ink-muted);padding-bottom:4px">Review answers</div>
+<sc-for list="{{ reviewRows }}" as="r" hint-placeholder-count="10"><button onClick="{{ r.onClick }}" style="min-height:48px;display:flex;align-items:center;gap:12px;text-align:left;border-bottom:1px solid var(--border)"><span style="flex:none;width:24px;height:24px;border-radius:999px;display:grid;place-items:center;font-size:12px;font-weight:700;background:{{ r.bg }};color:var(--bg)">{{ r.mark }}</span><span style="flex:1;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.n }}. {{ r.stem }}</span><svg width="16" height="16" viewBox="0 0 24 24" style="flex:none;fill:none;stroke:var(--ink-muted);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="m9 18 6-6-6-6"></path></svg></button></sc-for>
+</div>
+</div>
+<div style="padding:12px 20px 20px;flex:none;border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 2fr;gap:8px">
+<button onClick="{{ startMock }}" style="height:52px;border-radius:12px;background:var(--surface-2);font-size:15px;font-weight:600">Retake</button>
+<button onClick="{{ reviewFirstWrong }}" style="height:52px;border-radius:12px;background:var(--accent);color:var(--on-accent);font-size:16px;font-weight:600">{{ primaryLabel }}</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isReview }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;min-height:0">
+<div style="height:56px;flex:none;padding:0 16px 0 4px;display:flex;align-items:center;gap:4px;border-bottom:1px solid var(--border)">
+<button onClick="{{ openResults }}" aria-label="Back to results" style="width:48px;height:48px;display:grid;place-items:center"><svg width="22" height="22" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="m15 18-6-6 6-6"></path></svg></button>
+<div style="flex:1;font-weight:600;font-size:15px">Review · Q{{ qNum }} of {{ qCount }}</div>
+<span style="font-size:13px;font-weight:600;color:{{ verdictColor }}">{{ verdict }}</span>
+</div>
+<div style="flex:1;padding:24px 20px;display:flex;flex-direction:column;gap:20px;overflow:auto">
+<span style="align-self:flex-start;font-size:12px;color:var(--ink-muted);padding:4px 8px;border:1px solid var(--border);border-radius:999px">{{ q.topic }}</span>
+<div style="font-size:17px;line-height:1.6;text-wrap:pretty">{{ q.stem }}</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<sc-for list="{{ reviewOptions }}" as="o" hint-placeholder-count="4">
+<div style="min-height:52px;border-radius:12px;box-sizing:border-box;background:{{ o.rowBg }};border:1px solid {{ o.rowBorder }};display:flex;align-items:center;gap:12px;padding:10px 14px"><span style="flex:none;width:28px;height:28px;border-radius:999px;box-sizing:border-box;display:grid;place-items:center;font-size:13px;font-weight:700;background:{{ o.bubbleBg }};color:{{ o.bubbleFg }};border:{{ o.bubbleBorder }}">{{ o.letter }}</span><span style="flex:1;font-size:16px;line-height:1.4">{{ o.text }}</span><span style="font-size:12px;font-weight:600;color:{{ o.tagColor }}">{{ o.tag }}</span></div>
+</sc-for>
+</div>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:8px">
+<div style="font-family:'Space Grotesk';font-weight:700;font-size:16px">Why</div>
+<div style="font-size:15px;line-height:1.6">{{ q.why }}</div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding-top:4px"><span style="font-size:13px;color:var(--accent);font-weight:600">{{ q.source }}</span><span style="font-size:13px;color:var(--ink-muted)">Report</span></div>
+</div>
+</div>
+<div style="padding:12px 16px 16px;flex:none;border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<button onClick="{{ prev }}" style="height:48px;border-radius:12px;background:var(--surface-2);font-size:15px;font-weight:600;opacity:{{ prevOpacity }}">Previous</button>
+<button onClick="{{ reviewNext }}" style="height:48px;border-radius:12px;background:var(--accent);color:var(--on-accent);font-size:15px;font-weight:600">{{ reviewNextLabel }}</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isCards }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;min-height:0">
+<div style="height:56px;flex:none;padding:0 20px 0 4px;display:flex;align-items:center;gap:4px"><button onClick="{{ goHome }}" aria-label="Close" style="width:48px;height:48px;display:grid;place-items:center"><svg width="22" height="22" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button><span style="flex:1;font-weight:600;font-size:15px">GST 111 · {{ cardTotal }} due</span><span style="font-family:'Space Grotesk';font-weight:700;font-size:14px;color:var(--ink-muted)">{{ cardNum }}/{{ cardTotal }}</span></div>
+<div style="height:3px;flex:none;background:var(--surface-2)"><div style="height:100%;background:var(--spark);width:{{ cardPct }};transition:width 200ms ease-out"></div></div>
+<div style="flex:1;padding:24px 20px;display:flex;flex-direction:column;perspective:1200px">
+<button onClick="{{ flip }}" aria-label="Flip card" style="flex:1;position:relative;transform-style:preserve-3d;transition:transform {{ flipMs }}ms ease-out;transform:rotateY({{ flipDeg }}deg)">
+<div style="position:absolute;inset:0;backface-visibility:hidden;border-radius:24px;background:var(--surface);border:1px solid var(--border);padding:28px 24px;display:flex;flex-direction:column;justify-content:space-between;text-align:left"><span style="font-size:12px;color:var(--ink-muted);align-self:flex-start;padding:4px 8px;border:1px solid var(--border);border-radius:999px">{{ card.topic }}</span><span style="font-family:'Space Grotesk';font-size:28px;font-weight:700;line-height:1.25">{{ card.front }}</span><span style="font-size:14px;color:var(--ink-muted);text-align:center">Tap card to flip</span></div>
+<div style="position:absolute;inset:0;backface-visibility:hidden;transform:rotateY(180deg);border-radius:24px;background:var(--surface);border:1px solid var(--accent);padding:28px 24px;display:flex;flex-direction:column;gap:16px;text-align:left"><span style="font-size:15px;color:var(--ink-muted)">{{ card.front }}</span><span style="height:1px;background:var(--border)"></span><span style="font-size:18px;line-height:1.6">{{ card.back }}</span><span style="margin-top:auto;font-size:13px;color:var(--accent);font-weight:600">{{ card.source }}</span></div>
+</button>
+</div>
+<div style="padding:0 20px 20px;flex:none">
+<sc-if value="{{ flipped }}" hint-placeholder-val="{{ false }}">
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+<sc-for list="{{ ratings }}" as="r" hint-placeholder-count="4"><button onClick="{{ r.onClick }}" style="height:64px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:{{ r.bg }}"><span style="font-size:15px;font-weight:600;color:{{ r.fg }}">{{ r.label }}</span><span style="font-size:12px;color:{{ r.sub }}">{{ r.next }}</span></button></sc-for>
+</div>
+</sc-if>
+<sc-if value="{{ notFlipped }}" hint-placeholder-val="{{ true }}">
+<button onClick="{{ flip }}" style="width:100%;height:64px;border-radius:12px;background:var(--accent);color:var(--on-accent);font-size:16px;font-weight:600">Show answer</button>
+</sc-if>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isPractice }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;min-height:0">
+<div style="height:56px;flex:none;padding:0 16px 0 4px;display:flex;align-items:center;gap:4px"><button onClick="{{ goHome }}" aria-label="Close" style="width:48px;height:48px;display:grid;place-items:center"><svg width="22" height="22" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button><span style="flex:1;font-weight:600;font-size:15px">Practise · weak topics</span><span style="font-family:'Space Grotesk';font-weight:700;font-size:14px;color:var(--spark)">{{ runLabel }}</span></div>
+<div style="height:3px;flex:none;background:var(--surface-2)"><div style="height:100%;background:var(--accent);width:{{ pPct }}"></div></div>
+<div style="flex:1;padding:20px;display:flex;flex-direction:column;gap:16px;overflow:auto">
+<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:'Space Grotesk';font-weight:700;font-size:14px;color:var(--ink-muted)">{{ pNum }} of {{ pTotal }}</span><span style="font-size:12px;color:var(--ink-muted);padding:4px 8px;border:1px solid var(--border);border-radius:999px">{{ pq.topic }}</span></div>
+<div style="font-size:17px;line-height:1.6">{{ pq.stem }}</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<sc-for list="{{ pOptions }}" as="o" hint-placeholder-count="4"><button onClick="{{ o.onClick }}" style="min-height:52px;border-radius:12px;box-sizing:border-box;background:{{ o.rowBg }};border:1px solid {{ o.rowBorder }};opacity:{{ o.opacity }};display:flex;align-items:center;gap:12px;padding:10px 14px;text-align:left"><span style="flex:none;width:28px;height:28px;border-radius:999px;box-sizing:border-box;display:grid;place-items:center;font-size:13px;font-weight:700;background:{{ o.bubbleBg }};color:{{ o.bubbleFg }};border:{{ o.bubbleBorder }}">{{ o.letter }}</span><span style="font-size:16px;line-height:1.4">{{ o.text }}</span></button></sc-for>
+</div>
+<sc-if value="{{ pAnswered }}" hint-placeholder-val="{{ false }}">
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:6px"><span style="font-size:14px;font-weight:600;color:{{ pVerdictColor }}">{{ pVerdict }}</span><span style="font-size:15px;line-height:1.6">{{ pq.why }}</span><span style="font-size:13px;color:var(--accent);font-weight:600">{{ pq.source }}</span></div>
+</sc-if>
+</div>
+<div style="padding:12px 20px 20px;flex:none"><button onClick="{{ pNext }}" style="width:100%;height:52px;border-radius:12px;background:var(--accent);color:var(--on-accent);font-size:16px;font-weight:600;opacity:{{ pNextOpacity }}">{{ pNextLabel }}</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isDone }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;padding:56px 20px 20px;display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:14px;color:var(--ink-muted)">{{ done.kicker }}</span><span style="font-family:'Space Grotesk';font-size:40px;font-weight:700;line-height:1.05">{{ done.title }}</span><span style="font-size:16px;line-height:1.5"><span style="color:var(--spark);font-weight:600">{{ streak }} days straight.</span> {{ done.line }}</span></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+<sc-for list="{{ done.stats }}" as="s" hint-placeholder-count="4"><div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:4px"><span style="font-size:13px;color:var(--ink-muted)">{{ s.k }}</span><span style="font-family:'Space Grotesk';font-size:22px;font-weight:700;color:{{ s.c }}">{{ s.v }}</span></div></sc-for>
+</div>
+<button onClick="{{ goHome }}" style="margin-top:auto;height:52px;border-radius:12px;background:var(--accent);color:var(--on-accent);font-size:16px;font-weight:600">Back to Home</button>
+</div>
+</sc-if>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;'dark'|'light'&quot;},&quot;timerMinutes&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;min&quot;:1,&quot;max&quot;:30,&quot;default&quot;:10,&quot;unit&quot;:&quot;min&quot;,&quot;tsType&quot;:&quot;number&quot;}}">
+const QS = [
+  { topic: 'Concord', stem: 'Choose the option that best completes the sentence: Neither the lecturer nor the students ______ aware of the change of venue.', opts: ['was', 'were', 'is', 'has been', 'being'], a: 1, why: 'With "neither… nor", the verb agrees with the nearer subject. "Students" is plural, so "were".', source: 'Week 2 slides · p.8' },
+  { topic: 'Parts of speech', stem: 'Which of the following is a coordinating conjunction?', opts: ['although', 'because', 'but', 'unless'], a: 2, why: '"But" joins two equal clauses (FANBOYS). The others introduce dependent clauses, so they are subordinating.', source: 'Week 1 notes · p.4' },
+  { topic: 'Punctuation', stem: 'Which sentence is correctly punctuated?', opts: ['Its time to go.', "It's time to go.", "Its' time to go.", "It is' time to go."], a: 1, why: '"It\'s" is the contraction of "it is". "Its" without an apostrophe is possessive.', source: 'Week 4 slides · p.3' },
+  { topic: 'Library use', stem: 'The Dewey Decimal Classification arranges library materials by:', opts: ["the author's surname", 'subject', 'year of publication', 'publisher'], a: 1, why: 'Dewey groups books into ten main subject classes (000–900), then subdivides by subject.', source: 'Week 5 handout · p.2' },
+  { topic: 'Concord', stem: 'Each of the boys ______ his own textbook.', opts: ['have', 'has', 'are having', 'were having'], a: 1, why: '"Each" is singular, so it takes a singular verb, even with "of the boys" after it.', source: 'Week 2 slides · p.10' },
+  { topic: 'Parts of speech', stem: 'In "She ran quickly to the faculty", the word "quickly" is a/an:', opts: ['adjective', 'adverb', 'noun', 'preposition'], a: 1, why: '"Quickly" describes how she ran, modifying the verb, so it is an adverb.', source: 'Week 1 notes · p.6' },
+  { topic: 'Punctuation', stem: 'Which sentence uses the semicolon correctly?', opts: ['I came; I saw; I conquered.', 'I came; and I saw.', 'Because; I came.', 'I; came and saw.'], a: 0, why: 'A semicolon links independent clauses without a conjunction. Each part of option A is a full clause.', source: 'Week 4 slides · p.7' },
+  { topic: 'Library use', stem: 'In a university library, OPAC stands for:', opts: ['Open Periodical Archive Centre', 'Online Public Access Catalogue', 'Official Publications and Archives Collection', 'Online Patron Account Card'], a: 1, why: 'The OPAC is the searchable catalogue of everything the library holds.', source: 'Week 5 handout · p.4' },
+  { topic: 'Comprehension', stem: 'Skimming a passage means reading it to:', opts: ['memorise every detail', 'get the general idea', 'find one specific fact', 'check the spelling'], a: 1, why: 'Skimming is fast reading for gist. Finding one specific fact is scanning.', source: 'Week 3 slides · p.12' },
+  { topic: 'Comprehension', stem: 'The main idea of a paragraph is usually expressed in the:', opts: ['topic sentence', 'last word', 'footnote', 'title page'], a: 0, why: 'The topic sentence states what the paragraph is about; the rest supports it.', source: 'Week 3 slides · p.14' }
+];
+const CARDS = [
+  { topic: 'Barriers to communication', front: 'What is "semantic noise"?', back: 'A barrier caused by words or symbols meaning different things to sender and receiver, e.g. jargon, slang or ambiguous words.', source: 'Week 3 slides · p.12' },
+  { topic: 'Listening skills', front: 'Name the 4 stages of listening.', back: 'Receiving, understanding, evaluating, responding.', source: 'Week 3 slides · p.14' },
+  { topic: 'Concord', front: 'Neither… nor: which subject does the verb agree with?', back: 'The subject nearer to the verb. "Neither the lecturer nor the students were…"', source: 'Week 2 slides · p.8' },
+  { topic: 'Library use', front: 'What does OPAC stand for?', back: 'Online Public Access Catalogue: the searchable list of everything the library holds.', source: 'Week 5 handout · p.4' },
+  { topic: 'Comprehension', front: 'Skimming vs scanning?', back: 'Skimming: fast reading for the general idea. Scanning: searching for one specific fact.', source: 'Week 3 slides · p.12' },
+  { topic: 'Punctuation', front: 'When does a colon introduce a list?', back: 'Only after a complete clause: "I need three things: pens, paper and ink."', source: 'Week 4 slides · p.9' }
+];
+const PRACTICE = [2, 6, 3, 7];
+const RATINGS = [['Again', '<1 min', 'var(--wrong)'], ['Hard', '6 min', 'var(--flag)'], ['Good', '1 day', 'accent'], ['Easy', '4 days', 'var(--correct)']];
+const L = 'ABCDE';
+const fmt = s => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+
+class Component extends DCLogic {
+  state = { screen: 'home', i: 0, answers: {}, flags: {}, left: 0, used: 0, navOpen: false, confirm: null, shown: 0, last: null, pulse: false, themeOverride: null, streak: 5, xp: 1240 };
+
+  componentWillUnmount() { clearInterval(this.tick); clearInterval(this.count); }
+
+  startMock = () => {
+    clearInterval(this.tick);
+    const total = (this.props.timerMinutes ?? 10) * 60;
+    this.setState({ screen: 'mock', i: 0, answers: {}, flags: {}, left: total, used: 0, navOpen: false, confirm: null, pulse: false });
+    this.tick = setInterval(() => {
+      this.setState(s => {
+        const left = s.left - 1;
+        if (left === 60) { setTimeout(() => this.setState({ pulse: false }), 250); return { left, used: s.used + 1, pulse: true }; }
+        return { left, used: s.used + 1 };
+      }, () => { if (this.state.left <= 0) this.submit(); });
+    }, 1000);
+  };
+
+  reduced = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  startCards = () => this.setState({ screen: 'cards', c: 0, flipped: false, rated: [0, 0, 0, 0] });
+  startPractice = () => this.setState({ screen: 'practice', p: 0, pPick: null, pRight: 0, run: 0 });
+  rate = k => this.setState(s => {
+    const rated = s.rated.slice(); rated[k]++;
+    if (s.c >= CARDS.length - 1) {
+      const xp = CARDS.length * 3;
+      return { rated, xp: s.xp + xp, cardsLeft: 0, screen: 'done', done: { kicker: 'GST 111 flashcards', title: CARDS.length + ' cards done.', line: 'Streak kept for tonight.', stats: [{ k: 'Again', v: rated[0], c: 'var(--wrong)' }, { k: 'Hard', v: rated[1], c: 'var(--flag)' }, { k: 'Good', v: rated[2], c: 'var(--accent)' }, { k: 'Easy', v: rated[3], c: 'var(--correct)' }, { k: 'Earned', v: '+' + xp + ' XP', c: 'var(--spark)' }, { k: 'Next due', v: (rated[0] + rated[1]) + ' tomorrow', c: 'var(--ink)' }] } };
+    }
+    return { rated, c: s.c + 1, flipped: false };
+  });
+
+  submit = () => {
+    clearInterval(this.tick);
+    const score = QS.filter((q, i) => this.state.answers[i] === q.a).length;
+    const prevBest = this.state.last ? this.state.last.score : null;
+    const xpEarned = 20 + score * 4;
+    this.setState(s => ({ screen: 'results', navOpen: false, confirm: null, shown: 0, last: { score, prevBest, used: s.used, answers: s.answers, xpEarned }, xp: s.xp + xpEarned }));
+    clearInterval(this.count);
+    const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) { this.setState({ shown: score }); return; }
+    const step = Math.max(40, Math.floor(600 / Math.max(score, 1)));
+    this.count = setInterval(() => this.setState(s => {
+      if (s.shown >= score) { clearInterval(this.count); return null; }
+      return { shown: s.shown + 1 };
+    }), step);
+  };
+
+  renderVals() {
+    const s = this.state, n = QS.length;
+    const theme = s.themeOverride ?? this.props.theme ?? 'dark';
+    const timerMinutes = this.props.timerMinutes ?? 10;
+    const q = QS[s.i];
+    const answers = s.screen === 'review' && s.last ? s.last.answers : s.answers;
+    const answeredCount = Object.keys(s.answers).length;
+    const flaggedCount = Object.values(s.flags).filter(Boolean).length;
+    const low = s.left <= 300;
+
+    const options = q.opts.map((text, k) => {
+      const sel = s.answers[s.i] === k;
+      return {
+        letter: L[k], text,
+        rowBg: sel ? 'var(--accent-soft)' : 'var(--surface-2)', rowBorder: sel ? 'var(--accent)' : 'var(--surface-2)',
+        bubbleBg: sel ? 'var(--accent)' : 'transparent', bubbleFg: sel ? 'var(--on-accent)' : 'var(--ink-muted)', bubbleBorder: sel ? '0' : '1.5px solid var(--ink-muted)',
+        onClick: () => this.setState(st => ({ answers: { ...st.answers, [st.i]: k } }))
+      };
+    });
+
+    const mine = answers[s.i];
+    const reviewOptions = q.opts.map((text, k) => {
+      const right = k === q.a, wrongPick = mine === k && !right;
+      return {
+        letter: L[k], text,
+        rowBg: right ? 'var(--correct-soft)' : wrongPick ? 'var(--wrong-soft)' : 'var(--surface-2)',
+        rowBorder: right ? 'var(--correct)' : wrongPick ? 'var(--wrong)' : 'var(--surface-2)',
+        bubbleBg: right ? 'var(--correct)' : wrongPick ? 'var(--wrong)' : 'transparent',
+        bubbleFg: right || wrongPick ? 'var(--bg)' : 'var(--ink-muted)', bubbleBorder: right || wrongPick ? '0' : '1.5px solid var(--ink-muted)',
+        tag: right ? (mine === k ? 'Your answer ✓' : 'Correct') : wrongPick ? 'Your answer ✗' : '',
+        tagColor: right ? 'var(--correct)' : 'var(--wrong)'
+      };
+    });
+
+    const navCells = QS.map((_, k) => {
+      const ans = s.answers[k] !== undefined, fl = s.flags[k], cur = k === s.i;
+      return {
+        n: k + 1,
+        bg: ans && !fl ? 'var(--accent)' : 'var(--surface-2)',
+        fg: ans && !fl ? 'var(--on-accent)' : ans ? 'var(--ink)' : 'var(--ink-muted)',
+        border: fl ? '2px solid var(--flag)' : cur ? '2px solid var(--ink)' : '0',
+        onClick: () => this.setState({ i: k, navOpen: false })
+      };
+    });
+
+    const last = s.last;
+    const m = { weak: 'var(--wrong)', shaky: 'var(--flag)', good: 'var(--accent)', mastered: 'var(--correct)' };
+    let topics = [], reviewRows = [], resultLine = '', firstWrong = 0, wrongCount = 0;
+    if (last) {
+      const by = {};
+      QS.forEach((qq, k) => { by[qq.topic] = by[qq.topic] || [0, 0]; by[qq.topic][1]++; if (last.answers[k] === qq.a) by[qq.topic][0]++; });
+      topics = Object.entries(by).map(([name, [a, b]]) => {
+        const r = a / b, label = r < 0.34 ? 'weak' : r < 0.6 ? 'shaky' : r < 1 ? 'good' : 'mastered';
+        return { name, score: a + '/' + b, label, color: m[label], pct: Math.max(4, Math.round(r * 100)) + '%', r };
+      }).sort((x, y) => x.r - y.r);
+      const weak = topics.filter(t => t.r < 0.6).length;
+      reviewRows = QS.map((qq, k) => {
+        const ok = last.answers[k] === qq.a, blank = last.answers[k] === undefined;
+        return { n: k + 1, stem: qq.stem, mark: ok ? '✓' : blank ? '–' : '✕', bg: ok ? 'var(--correct)' : blank ? 'var(--ink-muted)' : 'var(--wrong)', onClick: () => this.setState({ screen: 'review', i: k }) };
+      });
+      wrongCount = reviewRows.filter(r => r.mark !== '✓').length;
+      firstWrong = Math.max(0, QS.findIndex((qq, k) => last.answers[k] !== qq.a));
+      const best = last.prevBest !== null && last.score > last.prevBest;
+      resultLine = last.score === n ? 'Full marks. Your future self says thanks.'
+        : best ? `New best, up ${last.score - last.prevBest} on your last try. That's the work paying off.`
+        : weak ? `Now we know where to focus — ${weak} topic${weak > 1 ? 's' : ''} to fix first.`
+        : 'Solid run. Review the misses and go again.';
+    }
+
+    const rev = s.screen === 'review';
+    const verdictOk = rev && last && last.answers[s.i] === q.a;
+    const confirmMap = {
+      submit: { t: 'Submit mock?', b: answeredCount < n ? `${n - answeredCount} question${n - answeredCount > 1 ? 's are' : ' is'} still blank${flaggedCount ? ` and ${flaggedCount} flagged` : ''}. You can't change answers after submitting.` : `All ${n} answered. You can't change answers after submitting.`, c: 'Keep going', o: 'Submit', a: this.submit },
+      leave: { t: 'Leave this mock?', b: 'Your timer keeps running and this attempt won\'t count. You can resume from Home.', c: 'Stay', o: 'Leave', a: () => { clearInterval(this.tick); this.setState({ screen: 'home', confirm: null }); } }
+    };
+    const cf = confirmMap[s.confirm] || confirmMap.submit;
+
+    return {
+      theme, timerMinutes, qCount: n, streak: s.streak, xp: s.xp.toLocaleString('en-NG'),
+      screenLabel: { home: '01 Home', mock: '02 Mock exam', results: '03 Results', review: '04 Question review' }[s.screen],
+      isHome: s.screen === 'home', isMock: s.screen === 'mock', isResults: s.screen === 'results', isReview: rev,
+      readiness: last ? Math.min(95, 60 + last.score * 2) : 68,
+      readyOffset: (414.7 * (1 - (last ? Math.min(95, 60 + last.score * 2) : 68) / 100)).toFixed(1),
+      readyNote: last ? `Updated from your ${last.score}/${n} mock` : '+6% this week',
+      planDone: last ? 3 : 2, hasLast: !!last, lastScore: last ? `${last.score}/${n}` : '',
+      toggleTheme: () => this.setState({ themeOverride: theme === 'dark' ? 'light' : 'dark' }),
+      startMock: this.startMock, goHome: () => this.setState({ screen: 'home' }), openResults: () => this.setState({ screen: 'results', shown: last ? last.score : 0 }),
+      q, qNum: s.i + 1, options, reviewOptions, navCells, answeredCount, flaggedCount, blankCount: n - answeredCount,
+      progressPct: Math.round((s.i + 1) / n * 100) + '%',
+      timeLeft: fmt(Math.max(0, s.left)),
+      timerBg: low ? 'transparent' : 'var(--surface-2)', timerBorder: low ? '1.5px solid var(--flag)' : '1.5px solid transparent', timerColor: low ? 'var(--flag)' : 'var(--ink)', timerScale: s.pulse ? 1.12 : 1,
+      flagBorder: s.flags[s.i] ? '1.5px solid var(--flag)' : '1.5px solid transparent', flagStroke: s.flags[s.i] ? 'var(--flag)' : 'var(--ink)', flagFill: s.flags[s.i] ? 'var(--flag)' : 'none',
+      toggleFlag: () => this.setState(st => ({ flags: { ...st.flags, [st.i]: !st.flags[st.i] } })),
+      prev: () => this.setState(st => ({ i: Math.max(0, st.i - 1) })), prevOpacity: s.i === 0 ? 0.4 : 1,
+      next: () => s.i === n - 1 ? this.setState({ confirm: 'submit' }) : this.setState({ i: s.i + 1 }),
+      nextLabel: s.i === n - 1 ? 'Submit' : 'Next',
+      navOpen: s.navOpen, openNav: () => this.setState({ navOpen: true }),
+      askSubmit: () => this.setState({ navOpen: false, confirm: 'submit' }), askLeave: () => this.setState({ confirm: 'leave' }),
+      confirmOpen: !!s.confirm, confirmTitle: cf.t, confirmBody: cf.b, confirmCancel: cf.c, confirmOk: cf.o, confirmAction: cf.a,
+      closeSheets: () => this.setState({ navOpen: false, confirm: null }),
+      shownScore: s.shown, resultLine, timeUsed: last ? fmt(last.used) : '00:00', scorePct: last ? Math.round(last.score / n * 100) + '%' : '0%', xpEarned: last ? last.xpEarned : 0,
+      topics, reviewRows,
+      primaryLabel: wrongCount ? `Review ${wrongCount} missed` : 'Review answers',
+      reviewFirstWrong: () => this.setState({ screen: 'review', i: firstWrong }),
+      verdict: verdictOk ? 'Correct' : (last && last.answers[s.i] === undefined ? 'Skipped' : 'Wrong'), verdictColor: verdictOk ? 'var(--correct)' : 'var(--wrong)',
+      reviewNext: () => s.i === n - 1 ? this.setState({ screen: 'results' }) : this.setState({ i: s.i + 1 }),
+      reviewNextLabel: s.i === n - 1 ? 'Back to results' : 'Next'
+    };
+  }
+}
+</script>
+</body>
+</html>

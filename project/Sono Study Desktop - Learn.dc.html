@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0B0D17;--surface:#141726;--surface-2:#1C2033;--border:#262B42;--ink:#EEF0FA;--ink-muted:#9499B5;--accent:#8B7CFF;--accent-soft:#25204D;--spark:#C6F24E;--correct:#3DD68C;--wrong:#FF6B6B;--flag:#FFB547;--on-accent:#0B0D17;--canvas:#06070D;--correct-soft:rgba(61,214,140,.12);--wrong-soft:rgba(255,107,107,.12)}
+[data-theme="light"]{--bg:#F6F6FB;--surface:#FFFFFF;--surface-2:#EEEEF6;--border:#E1E1EC;--ink:#10122B;--ink-muted:#5D6180;--accent:#5B4BE6;--accent-soft:#ECE9FF;--spark:#4E8A00;--correct:#13804B;--wrong:#C7362F;--flag:#A86600;--on-accent:#FFFFFF;--canvas:#E4E4EE;--correct-soft:#E3F4EA;--wrong-soft:#FBE7E6}
+body{margin:0;background:var(--canvas)}
+a{color:var(--accent)}a:hover{color:var(--ink)}
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="min-height:100vh;background:var(--canvas);color:var(--ink);font-family:Inter,system-ui,sans-serif;padding:56px 64px 96px;display:flex;flex-direction:column;gap:56px;font-variant-numeric:tabular-nums">
+
+<header style="display:flex;flex-direction:column;gap:10px;max-width:760px">
+<div style="font-family:'Space Grotesk',sans-serif;font-size:40px;font-weight:700;letter-spacing:-0.02em">Sono Study · Desktop 1440 · Learn</div>
+<div style="font-size:16px;line-height:1.6;color:var(--ink-muted)">Desktop versions of the Learn screens (mobile: <a href="Sono Study Screens - Learn.dc.html">Learn screens</a>). Same shell as <a href="Sono Study Desktop.dc.html">Desktop Home</a>: 248px sidebar, content max 1104px. Account screens: <a href="Sono Study Desktop - Account.dc.html">Desktop · Account</a>.</div>
+</header>
+
+<div id="5a" data-screen-label="5a Onboarding" style="display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;gap:10px;align-items:center"><span style="font-family:'Space Grotesk';font-weight:700;font-size:14px;background:var(--accent);color:var(--on-accent);padding:3px 9px;border-radius:999px">5a</span><span style="font-size:14px;font-weight:600">Onboarding · single page on desktop</span></div>
+<div style="width:1440px;height:900px;background:var(--bg);border:1px solid var(--border);border-radius:16px;overflow:hidden;display:grid;grid-template-columns:1fr 1fr">
+<div style="padding:64px 80px;display:flex;flex-direction:column;justify-content:space-between;border-right:1px solid var(--border)">
+<div style="display:flex;align-items:center;gap:10px"><svg width="28" height="28" viewBox="0 0 48 48"><circle cx="24" cy="32" r="13" style="fill:var(--accent)"></circle><path d="M12 14L24 4l12 10" style="fill:none;stroke:var(--spark);stroke-width:5;stroke-linecap:round;stroke-linejoin:round"></path></svg><span style="font-family:'Space Grotesk';font-size:20px;font-weight:700">Sono Study</span></div>
+<div style="display:flex;flex-direction:column;gap:20px"><span style="font-family:'Space Grotesk';font-size:56px;font-weight:700;line-height:1.05;letter-spacing:-0.02em">Set up your semester.</span><span style="font-size:18px;line-height:1.6;color:var(--ink-muted);max-width:460px">Tell us your school and courses. We'll pull in your class's shared banks and build a daily plan around your exams.</span></div>
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;gap:12px;align-items:center;font-size:15px"><span style="width:28px;height:28px;border-radius:999px;background:var(--correct);display:grid;place-items:center;color:var(--bg);font-weight:700;font-size:13px">✓</span>School</div>
+<div style="display:flex;gap:12px;align-items:center;font-size:15px"><span style="width:28px;height:28px;border-radius:999px;background:var(--correct);display:grid;place-items:center;color:var(--bg);font-weight:700;font-size:13px">✓</span>Department and level</div>
+<div style="display:flex;gap:12px;align-items:center;font-size:15px;font-weight:600"><span style="width:28px;height:28px;border-radius:999px;background:var(--accent);display:grid;place-items:center;color:var(--on-accent);font-weight:700;font-size:13px">3</span>Courses</div>
+<div style="display:flex;gap:12px;align-items:center;font-size:15px;color:var(--ink-muted)"><span style="width:28px;height:28px;border-radius:999px;border:2px solid var(--border);box-sizing:border-box;display:grid;place-items:center;font-weight:700;font-size:13px">4</span>Exam dates (optional)</div>
+</div>
+</div>
+<div style="padding:64px 80px;display:flex;flex-direction:column;gap:24px;justify-content:center">
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:14px;color:var(--ink-muted)">UNILAG · Mass Communication · 100L</span><span style="font-family:'Space Grotesk';font-size:32px;font-weight:700">What are you taking?</span></div>
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+<span style="height:40px;padding:0 10px 0 14px;border-radius:999px;background:var(--accent-soft);display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600">GST 111<span style="color:var(--ink-muted)">×</span></span>
+<span style="height:40px;padding:0 10px 0 14px;border-radius:999px;background:var(--accent-soft);display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600">MTH 101<span style="color:var(--ink-muted)">×</span></span>
+<span style="height:40px;padding:0 10px 0 14px;border-radius:999px;background:var(--accent-soft);display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600">CHM 101<span style="color:var(--ink-muted)">×</span></span>
+<span style="height:40px;padding:0 10px 0 14px;border-radius:999px;background:var(--accent-soft);display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600">MAC 111<span style="color:var(--ink-muted)">×</span></span>
+</div>
+<div style="height:52px;border-radius:12px;background:var(--surface-2);border:1px solid var(--accent);display:flex;align-items:center;padding:0 16px;font-size:16px">PHY 1<span style="width:1.5px;height:20px;background:var(--accent);margin-left:1px"></span></div>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-top:-16px">
+<div style="min-height:52px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;background:var(--accent-soft)"><span style="font-size:15px"><b>PHY 101</b> · General Physics I</span><span style="font-size:13px;color:var(--ink-muted)">812 Qs shared</span></div>
+<div style="min-height:52px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border)"><span style="font-size:15px"><b>PHY 107</b> · Physics Practical I</span><span style="font-size:13px;color:var(--ink-muted)">94 Qs shared</span></div>
+</div>
+<div style="display:flex;gap:10px;padding-top:8px"><span style="height:52px;padding:0 22px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;font-size:15px;font-weight:600">Back</span><span style="flex:1;height:52px;border-radius:12px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:16px;font-weight:600">Continue with 4 courses</span></div>
+</div>
+</div>
+</div>
+
+<div id="5b" data-screen-label="5b Course page" style="display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;gap:10px;align-items:center"><span style="font-family:'Space Grotesk';font-weight:700;font-size:14px;background:var(--accent);color:var(--on-accent);padding:3px 9px;border-radius:999px">5b</span><span style="font-size:14px;font-weight:600">Course page</span></div>
+<div style="width:1440px;height:900px;background:var(--bg);border:1px solid var(--border);border-radius:16px;overflow:hidden;display:grid;grid-template-columns:248px 1fr">
+<aside style="border-right:1px solid var(--border);padding:24px 16px;display:flex;flex-direction:column;gap:4px"><div style="display:flex;align-items:center;gap:10px;padding:0 12px 24px"><svg width="26" height="26" viewBox="0 0 48 48"><circle cx="24" cy="32" r="13" style="fill:var(--accent)"></circle><path d="M12 14L24 4l12 10" style="fill:none;stroke:var(--spark);stroke-width:5;stroke-linecap:round;stroke-linejoin:round"></path></svg><span style="font-family:'Space Grotesk';font-size:18px;font-weight:700">Sono Study</span></div><sc-for list="{{ navCourses }}" as="n" hint-placeholder-count="6"><div style="height:44px;border-radius:12px;padding:0 12px;display:flex;align-items:center;font-size:15px;font-weight:{{ n.weight }};background:{{ n.bg }};color:{{ n.color }}">{{ n.label }}</div></sc-for><div style="margin-top:auto;height:48px;border-radius:12px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:15px;font-weight:600">Upload notes</div></aside>
+<main style="padding:40px 48px;display:grid;grid-template-columns:1.2fr 1fr;gap:32px;overflow:hidden;align-content:start">
+<div style="display:flex;flex-direction:column;gap:28px">
+<div style="display:flex;align-items:center;gap:28px">
+<div style="position:relative;width:160px;height:160px;flex:none"><svg width="160" height="160" viewBox="0 0 160 160"><circle cx="80" cy="80" r="68" style="fill:none;stroke:var(--surface-2);stroke-width:14"></circle><circle cx="80" cy="80" r="68" transform="rotate(-90 80 80)" style="fill:none;stroke:var(--accent);stroke-width:14;stroke-linecap:round;stroke-dasharray:427.3;stroke-dashoffset:136.7"></circle></svg><div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><span style="font-family:'Space Grotesk';font-size:40px;font-weight:700;line-height:1">68%</span><span style="font-size:13px;color:var(--ink-muted)">good</span></div></div>
+<div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:14px;color:var(--flag);font-weight:600">Exam Mon 20 Oct · 4 days</span><span style="font-family:'Space Grotesk';font-size:44px;font-weight:700;line-height:1;letter-spacing:-0.02em">GST 111</span><span style="font-size:17px;color:var(--ink-muted)">Communication in English</span><div style="display:flex;gap:8px;padding-top:8px"><span style="height:48px;padding:0 22px;border-radius:12px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:15px;font-weight:600">Start a mock</span><span style="height:48px;padding:0 18px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;font-size:15px;font-weight:600">Practise weak topics</span></div></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px"><span style="font-family:'Space Grotesk';font-size:20px;font-weight:700">Topics</span><div style="display:flex;flex-wrap:wrap;gap:8px"><sc-for list="{{ topics }}" as="t" hint-placeholder-count="6"><span style="height:44px;padding:0 16px;border-radius:999px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;gap:8px;font-size:15px"><span style="width:8px;height:8px;border-radius:999px;background:{{ t.color }}"></span>{{ t.name }}<span style="font-size:13px;color:{{ t.color }};font-weight:600">{{ t.label }}</span></span></sc-for></div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:6px"><span style="font-size:14px;color:var(--ink-muted)">Flashcards due</span><span style="font-family:'Space Grotesk';font-size:32px;font-weight:700">12</span><span style="font-size:14px;color:var(--accent);font-weight:600">Review now</span></div>
+<div style="background:var(--accent-soft);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:6px"><span style="font-size:14px;color:var(--ink-muted)">Tutor</span><span style="font-size:17px;font-weight:600;line-height:1.4">Ask anything from your GST 111 notes</span><span style="font-size:14px;color:var(--accent);font-weight:600">Open chat</span></div>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:24px">
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;display:flex;flex-direction:column"><span style="font-family:'Space Grotesk';font-size:18px;font-weight:700;padding-bottom:8px">Shared banks</span>
+<div style="min-height:60px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)"><div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:600">UNILAG GST 111 past questions</span><span style="font-size:13px;color:var(--ink-muted)">420 Qs · used by 1.2k students</span></div><span style="font-size:13px;color:var(--correct);font-weight:600">Verified</span></div>
+<div style="min-height:60px;display:flex;align-items:center;gap:12px"><div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:600">Mass Comm 100L class bank</span><span style="font-size:13px;color:var(--ink-muted)">186 Qs · from 23 uploads</span></div></div></div>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;display:flex;flex-direction:column"><div style="display:flex;justify-content:space-between;padding-bottom:8px"><span style="font-family:'Space Grotesk';font-size:18px;font-weight:700">My uploads</span><span style="font-size:14px;color:var(--accent);font-weight:600">+ Upload</span></div>
+<div style="min-height:56px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)"><span style="width:36px;height:36px;border-radius:10px;background:var(--surface-2);display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--ink-muted)">PDF</span><div style="flex:1;display:flex;flex-direction:column"><span style="font-size:15px">Week 3 slides</span><span style="font-size:13px;color:var(--ink-muted)">64 Qs · 2 days ago</span></div></div>
+<div style="min-height:56px;display:flex;align-items:center;gap:12px"><span style="width:36px;height:36px;border-radius:10px;background:var(--surface-2);display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--ink-muted)">IMG</span><div style="flex:1;display:flex;flex-direction:column"><span style="font-size:15px">Lecture notes · 6 photos</span><span style="font-size:13px;color:var(--ink-muted)">38 Qs · last week</span></div></div></div>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;justify-content:space-between"><span style="font-family:'Space Grotesk';font-size:18px;font-weight:700">This week</span><span style="font-size:14px;color:var(--accent);font-weight:600">Full board</span></div>
+<div style="display:flex;gap:12px;font-size:15px"><span style="width:24px;font-family:'Space Grotesk';font-weight:700;color:var(--spark)">1</span><span style="flex:1">@ada_reads</span><span style="font-family:'Space Grotesk';font-weight:700">29/30</span></div>
+<div style="display:flex;gap:12px;font-size:15px"><span style="width:24px;font-family:'Space Grotesk';font-weight:700">2</span><span style="flex:1">Anonymous owl</span><span style="font-family:'Space Grotesk';font-weight:700">28/30</span></div>
+<div style="display:flex;gap:12px;font-size:15px;background:var(--accent-soft);margin:0 -8px;padding:8px;border-radius:10px"><span style="width:24px;font-family:'Space Grotesk';font-weight:700;color:var(--accent)">14</span><span style="flex:1;font-weight:600">You · @tolu</span><span style="font-family:'Space Grotesk';font-weight:700">24/30</span></div></div>
+</div>
+</main>
+</div>
+</div>
+
+<div id="5c" data-screen-label="5c Upload" style="display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;gap:10px;align-items:center"><span style="font-family:'Space Grotesk';font-weight:700;font-size:14px;background:var(--accent);color:var(--on-accent);padding:3px 9px;border-radius:999px">5c</span><span style="font-size:14px;font-weight:600">Upload · drop zone + live progress</span></div>
+<div style="width:1440px;height:900px;background:var(--bg);border:1px solid var(--border);border-radius:16px;overflow:hidden;display:grid;grid-template-columns:248px 1fr">
+<aside style="border-right:1px solid var(--border);padding:24px 16px;display:flex;flex-direction:column;gap:4px"><div style="display:flex;align-items:center;gap:10px;padding:0 12px 24px"><svg width="26" height="26" viewBox="0 0 48 48"><circle cx="24" cy="32" r="13" style="fill:var(--accent)"></circle><path d="M12 14L24 4l12 10" style="fill:none;stroke:var(--spark);stroke-width:5;stroke-linecap:round;stroke-linejoin:round"></path></svg><span style="font-family:'Space Grotesk';font-size:18px;font-weight:700">Sono Study</span></div><sc-for list="{{ navNone }}" as="n" hint-placeholder-count="6"><div style="height:44px;border-radius:12px;padding:0 12px;display:flex;align-items:center;font-size:15px;font-weight:{{ n.weight }};background:{{ n.bg }};color:{{ n.color }}">{{ n.label }}</div></sc-for><div style="margin-top:auto;height:48px;border-radius:12px;background:var(--accent-soft);border:1px solid var(--accent);color:var(--accent);display:grid;place-items:center;font-size:15px;font-weight:600">Upload notes</div></aside>
+<main style="padding:40px 48px;display:grid;grid-template-columns:1.3fr 1fr;gap:32px;overflow:hidden;align-content:start">
+<div style="display:flex;flex-direction:column;gap:24px">
+<span style="font-family:'Space Grotesk';font-size:32px;font-weight:700">Upload notes</span>
+<div style="height:260px;border-radius:24px;border:2px dashed var(--accent);background:var(--accent-soft);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center"><svg width="36" height="36" viewBox="0 0 24 24" style="fill:none;stroke:var(--accent);stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M17 8l-5-5-5 5"></path><path d="M12 3v12"></path></svg><span style="font-size:18px;font-weight:600">Drop slides, PDFs or photos here</span><span style="font-size:14px;color:var(--ink-muted)">or <span style="color:var(--accent);font-weight:600">browse files</span> · PDF, PPT, DOCX, JPG, PNG · up to 40 MB</span></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;color:var(--ink-muted)">Course</span><div style="height:52px;border-radius:12px;background:var(--surface-2);display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:16px">GST 111<span style="color:var(--ink-muted)">▾</span></div></div>
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;color:var(--ink-muted)">Make</span><div style="height:52px;border-radius:12px;background:var(--surface-2);display:flex;align-items:center;padding:0 14px;font-size:16px">Questions + flashcards</div></div>
+</div>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;display:flex;gap:12px;align-items:center"><div style="flex:1;display:flex;flex-direction:column;gap:4px"><span style="font-size:15px;font-weight:600">Share with your class</span><span style="font-size:14px;line-height:1.5;color:var(--ink-muted)">Questions (not your files) join the GST 111 bank for UNILAG. +50 XP when classmates use them.</span></div><span style="flex:none;width:48px;height:28px;border-radius:999px;background:var(--accent);position:relative"><span style="position:absolute;right:3px;top:3px;width:22px;height:22px;border-radius:999px;background:var(--on-accent)"></span></span></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:16px">
+<span style="font-size:14px;color:var(--ink-muted);padding-top:14px">In progress</span>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:'Space Grotesk';font-size:20px;font-weight:700">Week 4 slides.pdf</span><span style="font-size:13px;color:var(--ink-muted)">18 pages</span></div>
+<div style="display:flex;flex-direction:column;gap:4px">
+<div style="display:flex;gap:12px;align-items:center;min-height:40px;font-size:15px"><span style="width:24px;height:24px;border-radius:999px;background:var(--correct);color:var(--bg);display:grid;place-items:center;font-size:12px;font-weight:700">✓</span>Uploading</div>
+<div style="display:flex;gap:12px;align-items:center;min-height:40px;font-size:15px"><span style="width:24px;height:24px;border-radius:999px;background:var(--correct);color:var(--bg);display:grid;place-items:center;font-size:12px;font-weight:700">✓</span>Reading</div>
+<div style="display:flex;gap:12px;align-items:center;min-height:40px;font-size:15px;font-weight:600"><span style="width:24px;height:24px;border-radius:999px;border:3px solid var(--accent);border-right-color:var(--surface-2);box-sizing:border-box"></span>Making questions<span style="margin-left:auto;font-family:'Space Grotesk';color:var(--accent)">47</span></div>
+<div style="display:flex;gap:12px;align-items:center;min-height:40px;font-size:15px;color:var(--ink-muted)"><span style="width:24px;height:24px;border-radius:999px;border:2px solid var(--border);box-sizing:border-box"></span>Ready</div>
+</div>
+<div style="height:6px;border-radius:999px;background:var(--surface-2)"><div style="width:64%;height:100%;border-radius:999px;background:var(--accent)"></div></div>
+<span style="font-size:14px;line-height:1.5">Cooking your questions… page 12 of 18 · usually under a minute.</span>
+</div>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 20px;display:flex;align-items:center;gap:12px"><span style="width:24px;height:24px;border-radius:999px;background:var(--correct);color:var(--bg);display:grid;place-items:center;font-size:12px;font-weight:700">✓</span><div style="flex:1;display:flex;flex-direction:column"><span style="font-size:15px;font-weight:600">Lecture notes · 6 photos</span><span style="font-size:13px;color:var(--ink-muted)">64 questions ready</span></div><span style="height:40px;padding:0 14px;border-radius:12px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:14px;font-weight:600">Start mock</span></div>
+</div>
+</main>
+</div>
+</div>
+
+<div id="5d" data-screen-label="5d Mock setup" style="display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;gap:10px;align-items:center"><span style="font-family:'Space Grotesk';font-weight:700;font-size:14px;background:var(--accent);color:var(--on-accent);padding:3px 9px;border-radius:999px">5d</span><span style="font-size:14px;font-weight:600">Mock setup · form + live summary</span></div>
+<div style="width:1440px;height:900px;background:var(--bg);border:1px solid var(--border);border-radius:16px;overflow:hidden;display:grid;grid-template-columns:248px 1fr">
+<aside style="border-right:1px solid var(--border);padding:24px 16px;display:flex;flex-direction:column;gap:4px"><div style="display:flex;align-items:center;gap:10px;padding:0 12px 24px"><svg width="26" height="26" viewBox="0 0 48 48"><circle cx="24" cy="32" r="13" style="fill:var(--accent)"></circle><path d="M12 14L24 4l12 10" style="fill:none;stroke:var(--spark);stroke-width:5;stroke-linecap:round;stroke-linejoin:round"></path></svg><span style="font-family:'Space Grotesk';font-size:18px;font-weight:700">Sono Study</span></div><sc-for list="{{ navCourses }}" as="n" hint-placeholder-count="6"><div style="height:44px;border-radius:12px;padding:0 12px;display:flex;align-items:center;font-size:15px;font-weight:{{ n.weight }};background:{{ n.bg }};color:{{ n.color }}">{{ n.label }}</div></sc-for></aside>
+<main style="padding:40px 48px;display:grid;grid-template-columns:1fr 360px;gap:40px;overflow:hidden;align-content:start">
+<div style="display:flex;flex-direction:column;gap:28px;max-width:680px">
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:14px;color:var(--ink-muted)">GST 111</span><span style="font-family:'Space Grotesk';font-size:32px;font-weight:700">New mock</span></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:12px;background:var(--surface-2);max-width:360px"><span style="height:40px;border-radius:9px;background:var(--surface);display:grid;place-items:center;font-size:14px;font-weight:600">Build my own</span><span style="height:40px;display:grid;place-items:center;font-size:14px;font-weight:600;color:var(--ink-muted)">Pick a bank</span></div>
+<div style="display:flex;flex-direction:column;gap:10px"><span style="font-size:14px;color:var(--ink-muted)">Questions</span><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px"><sc-for list="{{ qOpts }}" as="o" hint-placeholder-count="5"><span style="height:52px;border-radius:12px;box-sizing:border-box;display:grid;place-items:center;font-family:'Space Grotesk';font-weight:700;font-size:16px;background:{{ o.bg }};border:1px solid {{ o.border }};color:{{ o.fg }}">{{ o.v }}</span></sc-for></div></div>
+<div style="display:flex;flex-direction:column;gap:10px"><div style="display:flex;justify-content:space-between"><span style="font-size:14px;color:var(--ink-muted)">Time</span><span style="font-size:13px;color:var(--ink-muted)">Real GST 111 CBT: 30 Qs in 25 min</span></div><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px"><sc-for list="{{ tOpts }}" as="o" hint-placeholder-count="5"><span style="height:52px;border-radius:12px;box-sizing:border-box;display:grid;place-items:center;font-family:'Space Grotesk';font-weight:700;font-size:16px;background:{{ o.bg }};border:1px solid {{ o.border }};color:{{ o.fg }}">{{ o.v }}</span></sc-for></div></div>
+<div style="display:flex;flex-direction:column;gap:10px"><div style="display:flex;justify-content:space-between"><span style="font-size:14px;color:var(--ink-muted)">Topics</span><span style="font-size:14px;color:var(--accent);font-weight:600">Weak only · All</span></div><div style="display:flex;flex-wrap:wrap;gap:8px"><sc-for list="{{ setupTopics }}" as="t" hint-placeholder-count="6"><span style="height:44px;padding:0 14px;border-radius:999px;box-sizing:border-box;display:flex;align-items:center;gap:8px;font-size:15px;background:{{ t.bg }};border:1px solid {{ t.border }}"><span style="width:8px;height:8px;border-radius:999px;background:{{ t.color }}"></span>{{ t.name }}</span></sc-for></div></div>
+<div style="display:flex;flex-direction:column;gap:10px"><span style="font-size:14px;color:var(--ink-muted)">Difficulty</span><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;border-radius:12px;background:var(--surface-2);max-width:420px"><span style="height:40px;border-radius:9px;background:var(--surface);display:grid;place-items:center;font-size:14px;font-weight:600">Mixed</span><span style="height:40px;display:grid;place-items:center;font-size:14px;font-weight:600;color:var(--ink-muted)">Easier</span><span style="height:40px;display:grid;place-items:center;font-size:14px;font-weight:600;color:var(--ink-muted)">Harder</span></div></div>
+</div>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:16px;align-self:start;margin-top:72px">
+<span style="font-family:'Space Grotesk';font-size:20px;font-weight:700">Your mock</span>
+<div style="display:flex;flex-direction:column;gap:10px;font-size:15px">
+<div style="display:flex;justify-content:space-between"><span style="color:var(--ink-muted)">Questions</span><span style="font-weight:600">30</span></div>
+<div style="display:flex;justify-content:space-between"><span style="color:var(--ink-muted)">Time</span><span style="font-weight:600">25 min</span></div>
+<div style="display:flex;justify-content:space-between"><span style="color:var(--ink-muted)">Topics</span><span style="font-weight:600">4 of 6</span></div>
+<div style="display:flex;justify-content:space-between"><span style="color:var(--ink-muted)">From</span><span style="font-weight:600">Your uploads + 2 banks</span></div>
+</div>
+<div style="background:var(--accent-soft);border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.5">Weighted toward Punctuation and Library use, where you lost the most marks last time.</div>
+<span style="height:52px;border-radius:12px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:16px;font-weight:600">Start mock</span>
+<span style="font-size:13px;color:var(--ink-muted);text-align:center">Downloads first, so it works offline</span>
+</div>
+</main>
+</div>
+</div>
+
+<div id="5e" data-screen-label="5e Practice" style="display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;gap:10px;align-items:center"><span style="font-family:'Space Grotesk';font-weight:700;font-size:14px;background:var(--accent);color:var(--on-accent);padding:3px 9px;border-radius:999px">5e</span><span style="font-size:14px;font-weight:600">Practice mode · instant feedback</span></div>
+<div style="width:1440px;height:900px;background:var(--bg);border:1px solid var(--border);border-radius:16px;overflow:hidden;display:flex;flex-direction:column">
+<div style="height:64px;flex:none;padding:0 24px;display:flex;align-items:center;gap:16px;border-bottom:1px solid var(--border)"><span style="height:40px;padding:0 14px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;font-size:14px;font-weight:600">Done</span><span style="flex:1;font-weight:600;font-size:16px">Practise · GST 111 · Punctuation</span><span style="font-family:'Space Grotesk';font-weight:700;color:var(--spark)">3 in a row</span><span style="font-family:'Space Grotesk';font-weight:700;color:var(--ink-muted)">4 / 10</span></div>
+<div style="height:3px;background:var(--surface-2)"><div style="width:40%;height:100%;background:var(--accent)"></div></div>
+<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:48px;padding:56px 80px;overflow:hidden">
+<div style="display:flex;flex-direction:column;gap:24px">
+<span style="font-size:20px;line-height:1.6">Which sentence uses the colon correctly?</span>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="min-height:56px;border-radius:12px;background:var(--wrong-soft);border:1px solid var(--wrong);display:flex;align-items:center;gap:14px;padding:0 16px;font-size:17px"><span style="width:30px;height:30px;border-radius:999px;background:var(--wrong);color:var(--bg);display:grid;place-items:center;font-size:14px;font-weight:700">✕</span>I need: pens, paper and ink.<span style="margin-left:auto;font-size:13px;font-weight:600;color:var(--wrong)">Your answer</span></div>
+<div style="min-height:56px;border-radius:12px;background:var(--correct-soft);border:1px solid var(--correct);display:flex;align-items:center;gap:14px;padding:0 16px;font-size:17px"><span style="width:30px;height:30px;border-radius:999px;background:var(--correct);color:var(--bg);display:grid;place-items:center;font-size:14px;font-weight:700">✓</span>I need three things: pens, paper and ink.<span style="margin-left:auto;font-size:13px;font-weight:600;color:var(--correct)">Correct</span></div>
+<div style="min-height:56px;border-radius:12px;background:var(--surface-2);display:flex;align-items:center;gap:14px;padding:0 16px;font-size:17px;opacity:.6"><span style="width:30px;height:30px;border-radius:999px;border:1.5px solid var(--ink-muted);box-sizing:border-box;display:grid;place-items:center;font-size:13px;font-weight:600;color:var(--ink-muted)">C</span>I need three: things, pens and ink.</div>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:10px"><span style="font-family:'Space Grotesk';font-size:20px;font-weight:700;color:var(--wrong)">Not quite</span><span style="font-size:17px;line-height:1.6">A colon follows a complete clause. "I need" can't introduce the list on its own here; "I need three things" can.</span><div style="display:flex;justify-content:space-between;padding-top:6px"><span style="font-size:14px;color:var(--accent);font-weight:600">Week 4 slides · p.9</span><span style="font-size:14px;color:var(--ink-muted)">Report</span></div></div>
+<div style="display:flex;gap:10px"><span style="height:52px;padding:0 20px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;font-size:15px;font-weight:600">Ask tutor why</span><span style="flex:1;height:52px;border-radius:12px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:16px;font-weight:600">Next question · Enter</span></div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="5f" data-screen-label="5f Flashcards" style="display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;gap:10px;align-items:center"><span style="font-family:'Space Grotesk';font-weight:700;font-size:14px;background:var(--accent);color:var(--on-accent);padding:3px 9px;border-radius:999px">5f</span><span style="font-size:14px;font-weight:600">Flashcards · flipped, rating</span></div>
+<div style="width:1440px;height:900px;background:var(--bg);border:1px solid var(--border);border-radius:16px;overflow:hidden;display:flex;flex-direction:column">
+<div style="height:64px;flex:none;padding:0 24px;display:flex;align-items:center;gap:16px;border-bottom:1px solid var(--border)"><span style="height:40px;padding:0 14px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;font-size:14px;font-weight:600">Done</span><span style="flex:1;font-weight:600;font-size:16px">Flashcards · GST 111 · 12 due</span><span style="font-family:'Space Grotesk';font-weight:700;color:var(--ink-muted)">4 / 12</span></div>
+<div style="height:3px;background:var(--surface-2)"><div style="width:33%;height:100%;background:var(--spark)"></div></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:40px">
+<div style="width:720px;height:420px;border-radius:24px;background:var(--surface);border:1px solid var(--accent);padding:40px;box-sizing:border-box;display:flex;flex-direction:column;gap:20px">
+<span style="font-size:16px;color:var(--ink-muted)">What is "semantic noise"?</span>
+<div style="height:1px;background:var(--border)"></div>
+<span style="font-size:24px;line-height:1.55;text-wrap:pretty">A barrier caused by words or symbols meaning different things to the sender and the receiver, e.g. jargon, slang or ambiguous words.</span>
+<span style="margin-top:auto;font-size:14px;color:var(--accent);font-weight:600">Week 3 slides · p.12</span>
+</div>
+<div style="display:grid;grid-template-columns:repeat(4,168px);gap:12px">
+<div style="height:72px;border-radius:12px;background:var(--surface-2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-size:16px;font-weight:600;color:var(--wrong)">Again</span><span style="font-size:13px;color:var(--ink-muted)">&lt;1 min · 1</span></div>
+<div style="height:72px;border-radius:12px;background:var(--surface-2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-size:16px;font-weight:600;color:var(--flag)">Hard</span><span style="font-size:13px;color:var(--ink-muted)">6 min · 2</span></div>
+<div style="height:72px;border-radius:12px;background:var(--accent);color:var(--on-accent);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-size:16px;font-weight:600">Good</span><span style="font-size:13px">1 day · 3</span></div>
+<div style="height:72px;border-radius:12px;background:var(--surface-2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-size:16px;font-weight:600;color:var(--correct)">Easy</span><span style="font-size:13px;color:var(--ink-muted)">4 days · 4</span></div>
+</div>
+<span style="font-size:13px;color:var(--ink-muted)">Space to flip · 1–4 to rate</span>
+</div>
+</div>
+</div>
+
+<div id="5g" data-screen-label="5g Tutor" style="display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;gap:10px;align-items:center"><span style="font-family:'Space Grotesk';font-weight:700;font-size:14px;background:var(--accent);color:var(--on-accent);padding:3px 9px;border-radius:999px">5g</span><span style="font-size:14px;font-weight:600">Tutor · chat + source panel</span></div>
+<div style="width:1440px;height:900px;background:var(--bg);border:1px solid var(--border);border-radius:16px;overflow:hidden;display:grid;grid-template-columns:248px 1fr 360px">
+<aside style="border-right:1px solid var(--border);padding:24px 16px;display:flex;flex-direction:column;gap:4px"><div style="display:flex;align-items:center;gap:10px;padding:0 12px 24px"><svg width="26" height="26" viewBox="0 0 48 48"><circle cx="24" cy="32" r="13" style="fill:var(--accent)"></circle><path d="M12 14L24 4l12 10" style="fill:none;stroke:var(--spark);stroke-width:5;stroke-linecap:round;stroke-linejoin:round"></path></svg><span style="font-family:'Space Grotesk';font-size:18px;font-weight:700">Sono Study</span></div><sc-for list="{{ navTutor }}" as="n" hint-placeholder-count="6"><div style="height:44px;border-radius:12px;padding:0 12px;display:flex;align-items:center;font-size:15px;font-weight:{{ n.weight }};background:{{ n.bg }};color:{{ n.color }}">{{ n.label }}</div></sc-for></aside>
+<div style="display:flex;flex-direction:column;min-width:0">
+<div style="height:64px;padding:0 32px;display:flex;align-items:center;border-bottom:1px solid var(--border);gap:12px"><span style="font-weight:600;font-size:16px;flex:1">Tutor · GST 111</span><span style="font-size:13px;color:var(--ink-muted)">Knows 3 uploads + 2 shared banks</span></div>
+<div style="flex:1;padding:32px;display:flex;flex-direction:column;gap:16px;justify-content:flex-end;overflow:hidden">
+<div style="align-self:flex-end;max-width:520px;background:var(--accent-soft);border-radius:16px 16px 4px 16px;padding:12px 16px;font-size:16px;line-height:1.5">What's the difference between hearing and listening?</div>
+<div style="align-self:flex-start;max-width:620px;display:flex;flex-direction:column;gap:8px"><div style="background:var(--surface);border:1px solid var(--border);border-radius:16px 16px 16px 4px;padding:14px 18px;font-size:16px;line-height:1.65">Hearing is physical: sound reaches your ears. Listening is active: you pay attention, interpret and respond. Your notes put it as "hearing is passive, listening is deliberate."<br><br>For the exam, remember the 4 stages of listening: receiving, understanding, evaluating, responding.</div><div style="display:flex;gap:6px"><span style="height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--accent);background:var(--accent-soft);display:flex;align-items:center;font-size:13px;color:var(--accent);font-weight:600">Week 3 slides · p.12</span><span style="height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--border);display:flex;align-items:center;font-size:13px;color:var(--accent);font-weight:600">Lecture notes · photo 4</span></div></div>
+<div style="align-self:flex-end;max-width:520px;background:var(--accent-soft);border-radius:16px 16px 4px 16px;padding:12px 16px;font-size:16px;line-height:1.5">Quiz me on this</div>
+<div style="align-self:flex-start;max-width:620px;background:var(--surface);border:1px solid var(--border);border-radius:16px 16px 16px 4px;padding:14px 18px;font-size:16px;line-height:1.65">Which stage comes right after "understanding"?<div style="display:flex;gap:8px;padding-top:10px"><span style="height:40px;padding:0 14px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;font-size:14px">A · Receiving</span><span style="height:40px;padding:0 14px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;font-size:14px">B · Evaluating</span><span style="height:40px;padding:0 14px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;font-size:14px">C · Responding</span></div></div>
+</div>
+<div style="padding:0 32px 10px;display:flex;gap:8px"><span style="height:36px;padding:0 12px;border-radius:999px;background:var(--surface-2);display:flex;align-items:center;font-size:13px;font-weight:600">Explain simpler</span><span style="height:36px;padding:0 12px;border-radius:999px;background:var(--surface-2);display:flex;align-items:center;font-size:13px;font-weight:600">Make flashcards</span><span style="height:36px;padding:0 12px;border-radius:999px;background:var(--surface-2);display:flex;align-items:center;font-size:13px;font-weight:600">Give an exam example</span></div>
+<div style="padding:10px 32px 24px;display:flex;gap:8px"><div style="flex:1;height:52px;border-radius:12px;background:var(--surface-2);display:flex;align-items:center;padding:0 16px;font-size:16px;color:var(--ink-muted)">Ask a follow-up…</div><div style="width:52px;height:52px;border-radius:12px;background:var(--accent);display:grid;place-items:center"><svg width="20" height="20" viewBox="0 0 24 24" style="fill:none;stroke:var(--on-accent);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M12 19V5M5 12l7-7 7 7"></path></svg></div></div>
+</div>
+<aside style="border-left:1px solid var(--border);background:var(--surface);padding:24px;display:flex;flex-direction:column;gap:14px">
+<span style="font-family:'Space Grotesk';font-size:18px;font-weight:700">Source</span>
+<span style="font-size:14px;color:var(--ink-muted)">Week 3 slides · page 12</span>
+<div style="height:220px;border-radius:12px;background:repeating-linear-gradient(135deg,var(--surface-2) 0 8px,var(--surface) 8px 16px);border:1px solid var(--border);display:grid;place-items:center;font-family:ui-monospace,monospace;font-size:12px;color:var(--ink-muted)">slide preview</div>
+<div style="border-left:3px solid var(--accent);padding:4px 0 4px 12px;font-size:14px;line-height:1.6">"Hearing is passive, listening is deliberate. Listening has four stages…"</div>
+<span style="font-size:14px;color:var(--accent);font-weight:600">Open full slides</span>
+</aside>
+</div>
+</div>
+
+<div id="5h" data-screen-label="5h Theory grading" style="display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;gap:10px;align-items:center"><span style="font-family:'Space Grotesk';font-weight:700;font-size:14px;background:var(--accent);color:var(--on-accent);padding:3px 9px;border-radius:999px">5h</span><span style="font-size:14px;font-weight:600">Theory grading · answer beside grade</span></div>
+<div style="width:1440px;height:900px;background:var(--bg);border:1px solid var(--border);border-radius:16px;overflow:hidden;display:flex;flex-direction:column">
+<div style="height:64px;flex:none;padding:0 24px;display:flex;align-items:center;gap:16px;border-bottom:1px solid var(--border)"><span style="height:40px;padding:0 14px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;font-size:14px;font-weight:600">Back</span><span style="flex:1;font-weight:600;font-size:16px">Theory · GST 111</span><span style="font-family:'Space Grotesk';font-weight:700;color:var(--ink-muted)">Q2 of 5</span></div>
+<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:40px;padding:40px 64px;overflow:hidden">
+<div style="display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;color:var(--ink-muted)">10 marks</span><span style="font-size:20px;line-height:1.6;font-weight:500">Explain three barriers to effective communication, with an example of each.</span></div>
+<div style="flex:1;border-radius:16px;background:var(--surface-2);padding:20px;font-size:16px;line-height:1.7">1. Noise: like a generator outside the lecture hall so students can't hear.<br><br>2. Language: when the lecturer uses big English words students don't know.<br><br>3. Emotions: if you are angry you won't listen well.</div>
+<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--ink-muted)"><span>62 words</span><span>Graded 23:51</span></div>
+</div>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;align-items:center;gap:20px"><div style="position:relative;width:96px;height:96px;flex:none"><svg width="96" height="96" viewBox="0 0 96 96"><circle cx="48" cy="48" r="40" style="fill:none;stroke:var(--surface-2);stroke-width:10"></circle><circle cx="48" cy="48" r="40" transform="rotate(-90 48 48)" style="fill:none;stroke:var(--accent);stroke-width:10;stroke-linecap:round;stroke-dasharray:251.3;stroke-dashoffset:100.5"></circle></svg><div style="position:absolute;inset:0;display:grid;place-items:center;font-family:'Space Grotesk';font-weight:700;font-size:24px">6/10</div></div><div style="display:flex;flex-direction:column;gap:4px"><span style="font-family:'Space Grotesk';font-size:24px;font-weight:700">Good start</span><span style="font-size:15px;color:var(--ink-muted)">Right barriers, thin explanations.</span></div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div style="display:flex;flex-direction:column;gap:10px"><span style="font-size:14px;font-weight:600;color:var(--correct)">Covered</span><div style="display:flex;gap:10px;font-size:15px;line-height:1.5"><span style="color:var(--correct);font-weight:700">✓</span>Physical noise, with a clear example</div><div style="display:flex;gap:10px;font-size:15px;line-height:1.5"><span style="color:var(--correct);font-weight:700">✓</span>Semantic/language barrier</div><div style="display:flex;gap:10px;font-size:15px;line-height:1.5"><span style="color:var(--correct);font-weight:700">✓</span>Psychological barrier</div></div>
+<div style="display:flex;flex-direction:column;gap:10px"><span style="font-size:14px;font-weight:600;color:var(--wrong)">Missed</span><div style="display:flex;gap:10px;font-size:15px;line-height:1.5"><span style="color:var(--wrong);font-weight:700">✕</span>Course terms: "semantic noise", "psychological noise"</div><div style="display:flex;gap:10px;font-size:15px;line-height:1.5"><span style="color:var(--wrong);font-weight:700">✕</span>How each one distorts the message</div></div>
+</div>
+<div style="background:var(--accent-soft);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:6px"><span style="font-size:14px;font-weight:600;color:var(--accent)">Tip</span><span style="font-size:15px;line-height:1.6">Markers give 1 for naming, 1 for explaining, 1 for the example. Add one line on <em>why</em> each blocks understanding.</span><span style="font-size:14px;color:var(--accent);font-weight:600">Week 3 slides · p.10</span></div>
+<div style="margin-top:auto;display:flex;gap:10px"><span style="flex:1;height:52px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;font-size:15px;font-weight:600">Rewrite answer</span><span style="flex:1;height:52px;border-radius:12px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:16px;font-weight:600">Next question</span></div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;'dark'|'light'&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const items = ['Home', 'Courses', 'Cards', 'Tutor', 'Leaderboard', 'Profile'];
+    const nav = a => items.map(label => ({ label, bg: label === a ? 'var(--accent-soft)' : 'transparent', color: label === a ? 'var(--ink)' : 'var(--ink-muted)', weight: label === a ? 600 : 500 }));
+    const m = { weak: 'var(--wrong)', shaky: 'var(--flag)', good: 'var(--accent)', mastered: 'var(--correct)' };
+    const raw = [['Concord', 'mastered'], ['Comprehension', 'good'], ['Listening skills', 'good'], ['Parts of speech', 'shaky'], ['Library use', 'shaky'], ['Punctuation', 'weak']];
+    const picked = ['Punctuation', 'Library use', 'Parts of speech', 'Comprehension'];
+    const opt = (v, on) => ({ v, bg: on ? 'var(--accent-soft)' : 'var(--surface-2)', border: on ? 'var(--accent)' : 'var(--surface-2)', fg: on ? 'var(--accent)' : 'var(--ink)' });
+    return {
+      theme: this.props.theme ?? 'dark',
+      navCourses: nav('Courses'), navNone: nav(''), navTutor: nav('Tutor'),
+      topics: raw.map(([name, label]) => ({ name, label, color: m[label] })),
+      setupTopics: raw.map(([name, label]) => { const on = picked.includes(name); return { name, color: m[label], bg: on ? 'var(--accent-soft)' : 'var(--surface)', border: on ? 'var(--accent)' : 'var(--border)' }; }),
+      qOpts: ['10', '20', '30', '50', '100'].map(v => opt(v, v === '30')),
+      tOpts: ['15m', '25m', '40m', '60m', 'No limit'].map(v => opt(v, v === '25m'))
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0B0D17;--surface:#141726;--surface-2:#1C2033;--border:#262B42;--ink:#EEF0FA;--ink-muted:#9499B5;--accent:#8B7CFF;--accent-soft:#25204D;--spark:#C6F24E;--correct:#3DD68C;--wrong:#FF6B6B;--flag:#FFB547;--on-accent:#0B0D17;--canvas:#06070D;--scrim:rgba(5,6,12,.72);--fw:360px}
+[data-theme="light"]{--bg:#F6F6FB;--surface:#FFFFFF;--surface-2:#EEEEF6;--border:#E1E1EC;--ink:#10122B;--ink-muted:#5D6180;--accent:#5B4BE6;--accent-soft:#ECE9FF;--spark:#4E8A00;--correct:#13804B;--wrong:#C7362F;--flag:#A86600;--on-accent:#FFFFFF;--canvas:#E4E4EE;--scrim:rgba(16,18,43,.45)}
+[data-fw="390"]{--fw:390px}
+body{margin:0;background:var(--canvas)}
+a{color:var(--accent)}a:hover{color:var(--ink)}
+</style>
+</helmet>
+<div data-theme="{{ theme }}" data-fw="{{ fw }}" style="min-height:100vh;background:var(--canvas);color:var(--ink);font-family:Inter,system-ui,sans-serif;padding:56px 64px 96px;display:flex;flex-direction:column;gap:72px;font-variant-numeric:tabular-nums">
+
+<header style="display:flex;flex-direction:column;gap:10px;max-width:760px">
+<div style="font-family:'Space Grotesk',sans-serif;font-size:40px;font-weight:700;letter-spacing:-0.02em">Sono Study · Account screens</div>
+<div style="font-size:16px;line-height:1.6;color:var(--ink-muted)">Leaderboard and challenge, profile and settings, paywall, queue and limit states, share cards. Tweaks: theme, 360/390 frame width. Related: <a href="Sono Study Explorations.dc.html">Explorations</a> · <a href="Sono Study Screens - Learn.dc.html">Learn screens</a> · <a href="Sono Study Desktop.dc.html">Desktop + landing</a>.</div>
+</header>
+
+<section data-screen-label="Leaderboard + Profile" style="display:flex;flex-direction:column;gap:24px">
+<div style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700">Leaderboard &amp; challenge · Profile</div>
+<div style="display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start">
+
+<div id="3a" style="display:flex;flex-direction:column;gap:12px;width:var(--fw)">
+<div style="display:flex;gap:10px;align-items:center"><span style="font-family:'Space Grotesk';font-weight:700;font-size:14px;background:var(--accent);color:var(--on-accent);padding:3px 9px;border-radius:999px">3a</span><span style="font-size:14px;font-weight:600">Weekly board + challenge countdown</span></div>
+<div style="width:var(--fw);height:780px;border-radius:28px;overflow:hidden;background:var(--bg);border:1px solid var(--border);display:flex;flex-direction:column;position:relative">
+<div style="height:28px;flex:none;padding:0 20px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--ink-muted)"><span>19:05</span><span>4G · 74%</span></div>
+<div style="padding:12px 20px 0;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:'Space Grotesk';font-size:22px;font-weight:700">GST 111 · UNILAG</span><span style="font-size:13px;color:var(--ink-muted)">Resets Sun</span></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:12px;background:var(--surface-2)"><span style="height:40px;border-radius:9px;background:var(--surface);display:grid;place-items:center;font-size:14px;font-weight:600">This week</span><span style="height:40px;display:grid;place-items:center;font-size:14px;font-weight:600;color:var(--ink-muted)">Challenges</span></div>
+<div style="border-radius:16px;background:var(--accent);color:var(--on-accent);padding:16px;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;font-weight:600">Friday Challenge · 30 Qs · 20 min</span><span style="font-size:12px;font-weight:600">218 joined</span></div>
+<div style="display:flex;gap:8px;align-items:baseline"><span style="font-family:'Space Grotesk';font-size:28px;font-weight:700">1d 04h 12m</span><span style="font-size:13px">to start</span></div>
+<div style="height:44px;border-radius:12px;background:var(--on-accent);color:var(--accent);display:grid;place-items:center;font-size:15px;font-weight:600">Join · remind me</div>
+</div>
+</div>
+<div style="flex:1;padding:12px 20px 0;display:flex;flex-direction:column;overflow:hidden">
+<div style="display:grid;grid-template-columns:32px 1fr auto auto;gap:12px;font-size:12px;color:var(--ink-muted);padding:0 0 6px"><span>#</span><span>Student</span><span>Best</span><span style="width:44px;text-align:right">Time</span></div>
+<sc-for list="{{ board }}" as="r" hint-placeholder-count="6"><div style="display:grid;grid-template-columns:32px 1fr auto auto;gap:12px;align-items:center;min-height:48px;border-bottom:1px solid var(--border)"><span style="font-family:'Space Grotesk';font-weight:700;font-size:15px;color:{{ r.rankColor }}">{{ r.rank }}</span><span style="display:flex;align-items:center;gap:10px;font-size:15px;min-width:0"><span style="flex:none;width:28px;height:28px;border-radius:999px;background:var(--surface-2);display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--ink-muted)">{{ r.init }}</span><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span></span><span style="font-family:'Space Grotesk';font-weight:700;font-size:15px">{{ r.score }}</span><span style="width:44px;text-align:right;font-size:13px;color:var(--ink-muted)">{{ r.time }}</span></div></sc-for>
+</div>
+<div style="margin:0 12px 12px;border-radius:12px;background:var(--accent-soft);border:1px solid var(--accent);display:grid;grid-template-columns:32px 1fr auto auto;gap:12px;align-items:center;min-height:56px;padding:0 8px"><span style="font-family:'Space Grotesk';font-weight:700;font-size:15px;color:var(--accent)">14</span><span style="display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600"><span style="width:28px;height:28px;border-radius:999px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:11px;font-weight:700">TO</span>You</span><span style="font-family:'Space Grotesk';font-weight:700;font-size:15px">24/30</span><span style="width:44px;text-align:right;font-size:13px;color:var(--ink-muted)">19:40</span></div>
+</div>
+</div>
+
+<div id="3b" style="display:flex;flex-direction:column;gap:12px;width:var(--fw)">
+<div style="display:flex;gap:10px;align-items:center"><span style="font-family:'Space Grotesk';font-weight:700;font-size:14px;background:var(--accent);color:var(--on-accent);padding:3px 9px;border-radius:999px">3b</span><span style="font-size:14px;font-weight:600">Closed challenge results</span></div>
+<div style="width:var(--fw);height:780px;border-radius:28px;overflow:hidden;background:var(--bg);border:1px solid var(--border);display:flex;flex-direction:column;position:relative">
+<div style="height:28px;flex:none;padding:0 20px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--ink-muted)"><span>21:30</span><span>4G · 66%</span></div>
+<div style="height:56px;padding:0 16px 0 4px;display:flex;align-items:center;gap:4px"><span style="width:48px;height:48px;display:grid;place-items:center"><svg width="22" height="22" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="m15 18-6-6 6-6"></path></svg></span><span style="flex:1;font-size:14px;color:var(--ink-muted)">Friday Challenge · closed</span></div>
+<div style="padding:0 20px 16px;display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:14px;color:var(--ink-muted)">You placed</span><div style="display:flex;align-items:baseline;gap:8px"><span style="font-family:'Space Grotesk';font-size:56px;font-weight:700;line-height:1">#6</span><span style="font-size:16px;color:var(--ink-muted)">of 212</span></div><span style="font-size:15px;line-height:1.5">Top 3%. <span style="color:var(--spark);font-weight:600">+150 XP</span> and a Top 10 badge.</span></div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;color:var(--ink-muted)">Score</span><span style="font-family:'Space Grotesk';font-weight:700;font-size:16px">26/30</span></div>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;color:var(--ink-muted)">Time</span><span style="font-family:'Space Grotesk';font-weight:700;font-size:16px">14:02</span></div>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;color:var(--ink-muted)">Class avg</span><span style="font-family:'Space Grotesk';font-weight:700;font-size:16px">17/30</span></div>
+</div>
+</div>
+<div style="flex:1;padding:0 20px;display:flex;flex-direction:column;overflow:hidden">
+<span style="font-size:13px;color:var(--ink-muted);padding-bottom:6px">Final standings</span>
+<sc-for list="{{ closed }}" as="r" hint-placeholder-count="7"><div style="display:grid;grid-template-columns:32px 1fr auto auto;gap:12px;align-items:center;min-height:46px;border-bottom:1px solid var(--border);background:{{ r.bg }};border-radius:{{ r.radius }};padding:0 {{ r.pad }}"><span style="font-family:'Space Grotesk';font-weight:700;font-size:15px;color:{{ r.rankColor }}">{{ r.rank }}</span><span style="font-size:15px;font-weight:{{ r.weight }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span><span style="font-family:'Space Grotesk';font-weight:700;font-size:15px">{{ r.score }}</span><span style="width:44px;text-align:right;font-size:13px;color:var(--ink-muted)">{{ r.time }}</span></div></sc-for>
+</div>
+<div style="padding:12px 20px 20px;display:grid;grid-template-columns:1fr 2fr;gap:8px"><div style="height:52px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;font-size:15px;font-weight:600">Review</div><div style="height:52px;border-radius:12px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:16px;font-weight:600">Share my rank</div></div>
+</div>
+</div>
+
+<div id="3c" style="display:flex;flex-direction:column;gap:12px;width:var(--fw)">
+<div style="display:flex;gap:10px;align-items:center"><span style="font-family:'Space Grotesk';font-weight:700;font-size:14px;background:var(--accent);color:var(--on-accent);padding:3px 9px;border-radius:999px">3c</span><span style="font-size:14px;font-weight:600">Profile &amp; settings · scrolls</span></div>
+<div style="width:var(--fw);border-radius:28px;overflow:hidden;background:var(--bg);border:1px solid var(--border);display:flex;flex-direction:column;position:relative">
+<div style="height:28px;flex:none;padding:0 20px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--ink-muted)"><span>19:10</span><span>4G · 73%</span></div>
+<div style="padding:16px 20px 24px;display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;align-items:center;gap:14px"><span style="width:56px;height:56px;border-radius:999px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-family:'Space Grotesk';font-weight:700;font-size:20px">TO</span><div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-family:'Space Grotesk';font-size:22px;font-weight:700">Tolu Okafor</span><span style="font-size:14px;color:var(--ink-muted)">@tolu · 1,240 XP · 6-day streak</span></div></div>
+<div style="display:flex;flex-direction:column"><span style="font-size:13px;color:var(--ink-muted);padding-bottom:6px">Study</span>
+<div style="min-height:52px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);font-size:15px"><span>School</span><span style="color:var(--ink-muted)">UNILAG · Mass Comm · 100L</span></div>
+<div style="min-height:52px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);font-size:15px"><span>Courses</span><span style="color:var(--ink-muted)">GST 111, MTH 101 +2</span></div>
+<div style="min-height:52px;display:flex;align-items:center;justify-content:space-between;font-size:15px"><span>Exam dates</span><span style="color:var(--ink-muted)">2 of 4 set</span></div></div>
+<div style="display:flex;flex-direction:column"><span style="font-size:13px;color:var(--ink-muted);padding-bottom:6px">Leaderboards</span>
+<div style="min-height:52px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);font-size:15px"><span>Handle</span><span style="color:var(--ink-muted)">@tolu</span></div>
+<div style="min-height:64px;display:flex;align-items:center;gap:12px"><div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:15px">Appear as anonymous</span><span style="font-size:13px;color:var(--ink-muted)">Shown as "Anonymous owl" to others</span></div><span style="flex:none;width:48px;height:28px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);box-sizing:border-box;position:relative"><span style="position:absolute;left:3px;top:2px;width:22px;height:22px;border-radius:999px;background:var(--ink-muted)"></span></span></div></div>
+<div style="display:flex;flex-direction:column"><span style="font-size:13px;color:var(--ink-muted);padding-bottom:6px">Notifications</span>
+<div style="min-height:52px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);font-size:15px"><span>Daily study reminder · 20:00</span><span style="flex:none;width:48px;height:28px;border-radius:999px;background:var(--accent);position:relative"><span style="position:absolute;right:3px;top:3px;width:22px;height:22px;border-radius:999px;background:var(--on-accent)"></span></span></div>
+<div style="min-height:52px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);font-size:15px"><span>Streak about to break</span><span style="flex:none;width:48px;height:28px;border-radius:999px;background:var(--accent);position:relative"><span style="position:absolute;right:3px;top:3px;width:22px;height:22px;border-radius:999px;background:var(--on-accent)"></span></span></div>
+<div style="min-height:52px;display:flex;align-items:center;justify-content:space-between;font-size:15px"><span>Challenge starts</span><span style="flex:none;width:48px;height:28px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);box-sizing:border-box;position:relative"><span style="position:absolute;left:3px;top:2px;width:22px;height:22px;border-radius:999px;background:var(--ink-muted)"></span></span></div></div>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;display:flex;align-items:center;gap:12px"><div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;color:var(--ink-muted)">Plan</span><span style="font-family:'Space Grotesk';font-size:18px;font-weight:700">Free</span><span style="font-size:13px;color:var(--ink-muted)">3 uploads and 2 mocks a day</span></div><div style="height:44px;padding:0 16px;border-radius:12px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:15px;font-weight:600">Upgrade</div></div>
+<div style="display:flex;flex-direction:column"><span style="font-size:13px;color:var(--ink-muted);padding-bottom:6px">Your data</span>
+<div style="min-height:52px;display:flex;align-items:center;border-bottom:1px solid var(--border);font-size:15px">Export my data</div>
+<div style="min-height:52px;display:flex;align-items:center;border-bottom:1px solid var(--border);font-size:15px">Theme · Dark</div>
+<div style="min-height:52px;display:flex;align-items:center;font-size:15px;color:var(--wrong);font-weight:600">Delete account</div></div>
+</div>
+</div>
+</div>
+
+</div>
+</section>
+
+<section data-screen-label="Paywall + Limits" style="display:flex;flex-direction:column;gap:24px">
+<div style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700">Paywall · Queue &amp; limits</div>
+<div style="display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start">
+
+<div id="3d" style="display:flex;flex-direction:column;gap:12px;width:var(--fw)">
+<div style="display:flex;gap:10px;align-items:center"><span style="font-family:'Space Grotesk';font-weight:700;font-size:14px;background:var(--accent);color:var(--on-accent);padding:3px 9px;border-radius:999px">3d</span><span style="font-size:14px;font-weight:600">Paywall sheet</span></div>
+<div style="width:var(--fw);height:780px;border-radius:28px;overflow:hidden;background:var(--bg);border:1px solid var(--border);display:flex;flex-direction:column;position:relative">
+<div style="height:28px;flex:none;padding:0 20px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--ink-muted)"><span>21:40</span><span>4G · 64%</span></div>
+<div style="padding:16px 20px;font-family:'Space Grotesk';font-size:22px;font-weight:700;color:var(--ink-muted)">Hey Tolu</div>
+<div style="position:absolute;inset:0;background:var(--scrim)"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-radius:24px 24px 0 0;padding:12px 20px 20px;display:flex;flex-direction:column;gap:16px">
+<div style="width:40px;height:4px;border-radius:999px;background:var(--border);align-self:center"></div>
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font-family:'Space Grotesk';font-size:28px;font-weight:700;line-height:1.15">Go unlimited before exams</span><span style="font-size:15px;line-height:1.5;color:var(--ink-muted)">One payment. No subscription, no auto-renew.</span></div>
+<div style="display:flex;flex-direction:column;gap:8px;font-size:15px">
+<div style="display:flex;gap:10px"><span style="color:var(--correct);font-weight:700">✓</span>Unlimited uploads and mocks</div>
+<div style="display:flex;gap:10px"><span style="color:var(--correct);font-weight:700">✓</span>Tutor with no daily cap</div>
+<div style="display:flex;gap:10px"><span style="color:var(--correct);font-weight:700">✓</span>Theory grading and full explanations</div>
+<div style="display:flex;gap:10px"><span style="color:var(--correct);font-weight:700">✓</span>Skip the queue when it's busy</div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+<div style="border-radius:16px;border:1px solid var(--border);background:var(--surface-2);padding:14px;display:flex;flex-direction:column;gap:4px"><span style="font-size:14px;font-weight:600">Week Pass</span><span style="font-family:'Space Grotesk';font-size:28px;font-weight:700">₦500</span><span style="font-size:13px;color:var(--ink-muted)">7 days</span></div>
+<div style="border-radius:16px;border:2px solid var(--accent);background:var(--accent-soft);padding:13px;display:flex;flex-direction:column;gap:4px;position:relative"><span style="position:absolute;top:-11px;right:10px;height:22px;padding:0 8px;border-radius:999px;background:var(--spark);color:#0B0D17;display:grid;place-items:center;font-size:11px;font-weight:700">Best value</span><span style="font-size:14px;font-weight:600">Semester Pass</span><span style="font-family:'Space Grotesk';font-size:28px;font-weight:700">₦2,000</span><span style="font-size:13px;color:var(--ink-muted)">Until 28 Feb · ₦100/wk</span></div>
+</div>
+<div style="height:52px;border-radius:12px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:16px;font-weight:600">Pay ₦2,000 with Paystack</div>
+<span style="font-size:12px;color:var(--ink-muted);text-align:center">Card, bank transfer or USSD · secured by Paystack</span>
+</div>
+</div>
+</div>
+
+<div id="3e" style="display:flex;flex-direction:column;gap:12px;width:var(--fw)">
+<div style="display:flex;gap:10px;align-items:center"><span style="font-family:'Space Grotesk';font-weight:700;font-size:14px;background:var(--accent);color:var(--on-accent);padding:3px 9px;border-radius:999px">3e</span><span style="font-size:14px;font-weight:600">Payment success</span></div>
+<div style="width:var(--fw);height:780px;border-radius:28px;overflow:hidden;background:var(--bg);border:1px solid var(--border);display:flex;flex-direction:column;position:relative">
+<div style="height:28px;flex:none;padding:0 20px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--ink-muted)"><span>21:42</span><span>4G · 64%</span></div>
+<div style="flex:1;padding:72px 20px 20px;display:flex;flex-direction:column;gap:20px">
+<div style="position:relative;width:72px;height:72px"><span style="position:absolute;inset:0;border-radius:999px;background:var(--spark);display:grid;place-items:center"><svg width="36" height="36" viewBox="0 0 24 24" style="fill:none;stroke:#0B0D17;stroke-width:3;stroke-linecap:round;stroke-linejoin:round"><path d="M20 6 9 17l-5-5"></path></svg></span><span style="position:absolute;right:-14px;top:-6px;width:10px;height:10px;background:var(--accent);transform:rotate(45deg)"></span><span style="position:absolute;left:-12px;bottom:4px;width:7px;height:7px;background:var(--spark);transform:rotate(45deg)"></span></div>
+<div style="display:flex;flex-direction:column;gap:8px"><span style="font-family:'Space Grotesk';font-size:40px;font-weight:700;line-height:1.05">You're on Semester Pass.</span><span style="font-size:16px;line-height:1.5;color:var(--ink-muted)">Active until 28 Feb 2027. Go and cook.</span></div>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px;font-size:14px">
+<div style="display:flex;justify-content:space-between"><span style="color:var(--ink-muted)">Paid</span><span style="font-weight:600">₦2,000</span></div>
+<div style="display:flex;justify-content:space-between"><span style="color:var(--ink-muted)">Reference</span><span style="font-family:ui-monospace,monospace;font-size:13px">PSK-7Q2M-81XA</span></div>
+<div style="display:flex;justify-content:space-between"><span style="color:var(--ink-muted)">Receipt</span><span style="color:var(--accent);font-weight:600">Sent to email</span></div>
+</div>
+<div style="margin-top:auto;display:flex;flex-direction:column;gap:8px"><div style="height:52px;border-radius:12px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:16px;font-weight:600">Back to studying</div></div>
+</div>
+</div>
+</div>
+
+<div id="3f" style="display:flex;flex-direction:column;gap:12px;width:var(--fw)">
+<div style="display:flex;gap:10px;align-items:center"><span style="font-family:'Space Grotesk';font-weight:700;font-size:14px;background:var(--accent);color:var(--on-accent);padding:3px 9px;border-radius:999px">3f</span><span style="font-size:14px;font-weight:600">Queue · busy</span></div>
+<div style="width:var(--fw);height:780px;border-radius:28px;overflow:hidden;background:var(--bg);border:1px solid var(--border);display:flex;flex-direction:column;position:relative">
+<div style="height:28px;flex:none;padding:0 20px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--ink-muted)"><span>22:58</span><span>4G · 58%</span></div>
+<div style="flex:1;padding:72px 20px 20px;display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:14px;color:var(--flag);font-weight:600">Exam week rush</span><span style="font-family:'Space Grotesk';font-size:40px;font-weight:700;line-height:1.05">Busy right now. Ready in about 4 min.</span><span style="font-size:16px;line-height:1.5;color:var(--ink-muted)">Lots of GST 111 students uploading tonight. Your 6 photos are saved and in line.</span></div>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;justify-content:space-between;font-size:14px"><span style="color:var(--ink-muted)">Your place</span><span style="font-family:'Space Grotesk';font-weight:700">18th in line</span></div>
+<div style="height:6px;border-radius:999px;background:var(--surface-2)"><div style="width:35%;height:100%;border-radius:999px;background:var(--flag)"></div></div>
+<span style="font-size:13px;color:var(--ink-muted)">We'll notify you. You can close the app.</span>
+</div>
+<div style="margin-top:auto;display:flex;flex-direction:column;gap:8px">
+<div style="height:52px;border-radius:12px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:16px;font-weight:600">Do 12 flashcards while you wait</div>
+<div style="height:48px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;font-size:15px;font-weight:600">Skip the queue · Week Pass ₦500</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="3g" style="display:flex;flex-direction:column;gap:12px;width:var(--fw)">
+<div style="display:flex;gap:10px;align-items:center"><span style="font-family:'Space Grotesk';font-weight:700;font-size:14px;background:var(--accent);color:var(--on-accent);padding:3px 9px;border-radius:999px">3g</span><span style="font-size:14px;font-weight:600">Daily limit reached</span></div>
+<div style="width:var(--fw);height:780px;border-radius:28px;overflow:hidden;background:var(--bg);border:1px solid var(--border);display:flex;flex-direction:column;position:relative">
+<div style="height:28px;flex:none;padding:0 20px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--ink-muted)"><span>23:05</span><span>4G · 57%</span></div>
+<div style="flex:1;padding:72px 20px 20px;display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:8px"><span style="font-family:'Space Grotesk';font-size:40px;font-weight:700;line-height:1.05">That's today's 3 free uploads.</span><span style="font-size:16px;line-height:1.5;color:var(--ink-muted)">Resets in <span style="font-family:'Space Grotesk';font-weight:700;color:var(--ink)">06:54:10</span>. Flashcards and practice still work.</span></div>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:15px;font-weight:600">Invite 2 classmates, get +5 uploads</span><span style="font-size:13px;line-height:1.5;color:var(--ink-muted)">When they sign up and finish one mock. 1 of 2 joined.</span></div>
+<div style="display:flex;gap:8px"><div style="flex:1;height:44px;border-radius:12px;background:var(--surface-2);display:flex;align-items:center;padding:0 12px;font-family:ui-monospace,monospace;font-size:13px;color:var(--ink-muted)">sono.study/i/tolu</div><div style="height:44px;padding:0 14px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;font-size:14px;font-weight:600">Copy</div></div>
+<div style="height:48px;border-radius:12px;border:1px solid var(--correct);color:var(--correct);display:grid;place-items:center;font-size:15px;font-weight:600">Share on WhatsApp</div>
+</div>
+<div style="margin-top:auto;display:flex;flex-direction:column;gap:8px">
+<div style="height:52px;border-radius:12px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:16px;font-weight:600">Go unlimited · from ₦500</div>
+<div style="height:44px;display:grid;place-items:center;font-size:15px;font-weight:600;color:var(--ink-muted)">Practise instead</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</section>
+
+<section data-screen-label="Share cards" style="display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;flex-direction:column;gap:6px"><div style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700">Share cards</div><div style="font-size:14px;color:var(--ink-muted)">Authored at 1080×1920 and 1080×1080, shown at 32%. Always dark so they look the same on any feed.</div></div>
+<div style="display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start">
+
+<div id="3h" style="display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;gap:10px;align-items:center"><span style="font-family:'Space Grotesk';font-weight:700;font-size:14px;background:var(--accent);color:var(--on-accent);padding:3px 9px;border-radius:999px">3h</span><span style="font-size:14px;font-weight:600">Story · 1080×1920</span></div>
+<div style="width:346px;height:615px;overflow:hidden;border-radius:12px">
+<div style="width:1080px;height:1920px;transform:scale(0.32);transform-origin:0 0;background:#0B0D17;color:#EEF0FA;padding:120px 96px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;font-family:Inter,sans-serif">
+<div style="display:flex;align-items:center;gap:24px"><svg width="88" height="88" viewBox="0 0 48 48"><circle cx="24" cy="32" r="13" style="fill:#8B7CFF"></circle><path d="M12 14L24 4l12 10" style="fill:none;stroke:#C6F24E;stroke-width:5;stroke-linecap:round;stroke-linejoin:round"></path></svg><span style="font-family:'Space Grotesk';font-size:64px;font-weight:700">Sono Study</span></div>
+<div style="display:flex;flex-direction:column;gap:40px">
+<span style="align-self:flex-start;padding:16px 32px;border-radius:999px;border:4px solid #C6F24E;color:#C6F24E;font-family:'Space Grotesk';font-weight:700;font-size:40px;letter-spacing:.04em">NEW BEST</span>
+<span style="font-size:56px;font-weight:600;color:#9499B5">GST 111 mock</span>
+<div style="display:flex;align-items:baseline;gap:16px"><span style="font-family:'Space Grotesk';font-size:340px;font-weight:700;line-height:.9;letter-spacing:-0.03em">24</span><span style="font-family:'Space Grotesk';font-size:140px;font-weight:600;color:#9499B5">/30</span></div>
+<div style="display:flex;gap:24px"><span style="padding:24px 36px;border-radius:32px;background:#141726;font-size:44px;font-weight:600;color:#C6F24E">6-day streak</span><span style="padding:24px 36px;border-radius:32px;background:#141726;font-size:44px;font-weight:600">19:40</span></div>
+</div>
+<div style="display:flex;justify-content:space-between;align-items:flex-end;border-top:3px solid #262B42;padding-top:56px"><div style="display:flex;flex-direction:column;gap:12px"><span style="font-size:48px;font-weight:600">Practise with me</span><span style="font-family:ui-monospace,monospace;font-size:40px;color:#8B7CFF">sono.study/tolu</span></div><div style="width:200px;height:200px;border-radius:24px;background:repeating-linear-gradient(45deg,#1C2033 0 12px,#262B42 12px 24px);display:grid;place-items:center;font-family:ui-monospace,monospace;font-size:28px;color:#9499B5">QR</div></div>
+</div>
+</div>
+</div>
+
+<div id="3i" style="display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;gap:10px;align-items:center"><span style="font-family:'Space Grotesk';font-weight:700;font-size:14px;background:var(--accent);color:var(--on-accent);padding:3px 9px;border-radius:999px">3i</span><span style="font-size:14px;font-weight:600">Square · 1080×1080</span></div>
+<div style="width:346px;height:346px;overflow:hidden;border-radius:12px">
+<div style="width:1080px;height:1080px;transform:scale(0.32);transform-origin:0 0;background:#8B7CFF;color:#0B0D17;padding:88px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;font-family:Inter,sans-serif">
+<div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;align-items:center;gap:20px"><svg width="72" height="72" viewBox="0 0 48 48"><circle cx="24" cy="32" r="13" style="fill:#0B0D17"></circle><path d="M12 14L24 4l12 10" style="fill:none;stroke:#0B0D17;stroke-width:5;stroke-linecap:round;stroke-linejoin:round"></path></svg><span style="font-family:'Space Grotesk';font-size:52px;font-weight:700">Sono Study</span></div><span style="font-size:40px;font-weight:600">GST 111</span></div>
+<div style="display:flex;flex-direction:column;gap:16px"><span style="font-size:48px;font-weight:600">Friday Challenge</span><div style="display:flex;align-items:baseline;gap:24px"><span style="font-family:'Space Grotesk';font-size:300px;font-weight:700;line-height:.85;letter-spacing:-0.03em">#6</span><span style="font-size:56px;font-weight:600">of 212</span></div></div>
+<div style="display:flex;justify-content:space-between;align-items:flex-end"><div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:44px;font-weight:600">26/30 · 14:02</span><span style="font-family:ui-monospace,monospace;font-size:36px">sono.study/tolu</span></div><div style="width:168px;height:168px;border-radius:20px;background:#0B0D17;opacity:.9;display:grid;place-items:center;font-family:ui-monospace,monospace;font-size:26px;color:#8B7CFF">QR</div></div>
+</div>
+</div>
+</div>
+
+</div>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;'dark'|'light'&quot;},&quot;frameWidth&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;360&quot;,&quot;390&quot;],&quot;default&quot;:&quot;360&quot;,&quot;tsType&quot;:&quot;'360'|'390'&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const people = [['@ada_reads', 'AR', '29/30', '12:48'], ['Anonymous owl', 'AO', '28/30', '15:02'], ['@chidi.b', 'CB', '28/30', '17:30'], ['@fola_', 'FO', '27/30', '13:55'], ['@ngozi.mc', 'NM', '27/30', '16:12'], ['@seun', 'SE', '26/30', '11:40'], ['Anonymous fox', 'AF', '26/30', '18:09']];
+    const medal = i => i === 0 ? 'var(--spark)' : 'var(--ink)';
+    const board = people.slice(0, 6).map((p, i) => ({ rank: i + 1, name: p[0], init: p[1], score: p[2], time: p[3], rankColor: medal(i) }));
+    const closed = people.map((p, i) => {
+      const me = i === 5;
+      return { rank: i + 1, name: me ? 'You · @tolu' : p[0], score: me ? '26/30' : p[2], time: me ? '14:02' : p[3], rankColor: me ? 'var(--accent)' : medal(i), bg: me ? 'var(--accent-soft)' : 'transparent', radius: me ? '10px' : '0', pad: me ? '8px' : '0', weight: me ? 600 : 400 };
+    });
+    return { theme: this.props.theme ?? 'dark', fw: String(this.props.frameWidth ?? 360), board, closed };
+  }
+}
+</script>
+</body>
+</html>
