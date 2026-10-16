@@ -99,3 +99,9 @@ export function planSummary(plan: PlanName): string {
   const p = PLANS[plan];
   return `${p.uploadsPerDay} uploads and ${p.aiQuestionsPerDay} AI questions a day`;
 }
+
+/** XP for turning notes into questions (design 2g), and for the first classmate who practises them (design 2e). */
+export const UPLOAD_XP = 60;
+export const CLASSMATE_XP = 50;
+/** Most photos in one upload (each photo counts as a page against pagesPerUpload). */
+export const MAX_PHOTOS = 30;

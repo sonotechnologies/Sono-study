@@ -168,15 +168,40 @@ export const uploads = pgTable(
     courseId: text("course_id")
       .notNull()
       .references(() => courses.id),
+    /** Storage key of the first file (files are private: never a public URL). */
     fileUrl: text("file_url").notNull(),
+    /** Every stored file, in order (several for photos). */
+    fileKeys: text("file_keys").array().notNull().default(sql`'{}'::text[]`),
+    /** SHA-256 of the file (or of the photos' hashes, in order). Checked again on the server. */
     fileHash: text("file_hash").notNull(),
+    /** pdf | pptx | docx | photos */
     type: text("type").notNull(),
+    title: text("title").notNull().default("Notes"),
+    sizeBytes: integer("size_bytes").notNull().default(0),
     status: uploadStatus("status").notNull().default("queued"),
+    /** Live "what's happening" line for the progress card. */
+    statusLine: text("status_line"),
+    error: text("error"),
     pageCount: integer("page_count"),
+    /** Pages actually read (the plan caps pages per upload). */
+    pagesUsed: integer("pages_used"),
+    chunksTotal: integer("chunks_total").notNull().default(0),
+    chunksDone: integer("chunks_done").notNull().default(0),
+    /** AI questions this upload may still make (today's allowance when it was read). */
+    questionBudget: integer("question_budget").notNull().default(0),
+    questionsMade: integer("questions_made").notNull().default(0),
+    flashcardsMade: integer("flashcards_made").notNull().default(0),
+    isPastPaper: boolean("is_past_paper").notNull().default(false),
+    /** Same file seen before: its questions and chunks were reused, no AI spent. */
+    reusedFromId: text("reused_from_id"),
+    xpEarned: integer("xp_earned").notNull().default(0),
+    /** Set when a classmate first practises this upload's questions (+50 XP, once). */
+    classmateXpAt: ts("classmate_xp_at"),
     visibility: uploadVisibility("visibility").notNull().default("contribute"),
     createdAt: createdAt(),
+    completedAt: ts("completed_at"),
   },
-  (t) => [index("uploads_hash_idx").on(t.fileHash), index("uploads_user_idx").on(t.userId)],
+  (t) => [index("uploads_hash_idx").on(t.fileHash), index("uploads_user_idx").on(t.userId, t.createdAt)],
 );
 
 export const chunks = pgTable(
@@ -186,9 +211,16 @@ export const chunks = pgTable(
     uploadId: text("upload_id")
       .notNull()
       .references(() => uploads.id, { onDelete: "cascade" }),
+    position: integer("position").notNull().default(0),
     text: text("text").notNull(),
+    /** First page/slide/photo in this chunk, and a label for citations ("p.3–5", "slide 4"). */
     page: integer("page"),
+    pageEnd: integer("page_end"),
+    label: text("label"),
     topic: text("topic"),
+    /** Questions this chunk should make; set when the upload is read. */
+    questionTarget: integer("question_target").notNull().default(0),
+    generatedAt: ts("generated_at"),
     embedding: vector("embedding", { dimensions: 768 }),
   },
   (t) => [index("chunks_upload_idx").on(t.uploadId)],
@@ -355,7 +387,9 @@ export const flashcards = pgTable("flashcards", {
   front: text("front").notNull(),
   back: text("back").notNull(),
   sourceUploadId: text("source_upload_id").references(() => uploads.id, { onDelete: "set null" }),
+  sourceLabel: text("source_label"),
   visibility: visibility("visibility").notNull().default("shared"),
+  createdAt: createdAt(),
 });
 
 export const cardReviews = pgTable(
@@ -481,11 +515,24 @@ export const aiJobs = pgTable(
     provider: text("provider"),
     attempts: integer("attempts").notNull().default(0),
     runAfter: ts("run_after").notNull().defaultNow(),
+    /** When a worker claimed it; a running job older than the lease is reclaimed. */
+    lockedAt: ts("locked_at"),
+    finishedAt: ts("finished_at"),
     error: text("error"),
     createdAt: createdAt(),
   },
   (t) => [index("ai_jobs_queue_idx").on(t.status, t.priority, t.runAfter)],
 );
+
+/** Free-tier providers that hit a limit rest until cooldownUntil; the queue waits for the first to recover. */
+export const aiProviders = pgTable("ai_providers", {
+  name: text("name").primaryKey(),
+  cooldownUntil: ts("cooldown_until"),
+  lastError: text("last_error"),
+  calls: integer("calls").notNull().default(0),
+  failures: integer("failures").notNull().default(0),
+  updatedAt: ts("updated_at").notNull().defaultNow(),
+});
 
 export const aiUsage = pgTable(
   "ai_usage",

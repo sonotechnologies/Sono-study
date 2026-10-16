@@ -5,7 +5,7 @@
  * integrity events). The server owns the deadline and does all marking;
  * answer keys never leave this module during a mock.
  */
-import { and, asc, desc, eq, inArray, isNotNull, ne, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 import type { Db } from "@/db";
 import {
   attemptAnswers,
@@ -27,7 +27,7 @@ import {
 import { extendProUntil } from "@/lib/billing";
 import { recordWeeklyResult } from "@/lib/leaderboard";
 import { masteryScore, MASTERY_WINDOW } from "@/lib/mastery";
-import { REFERRAL } from "@/lib/plans";
+import { CLASSMATE_XP, REFERRAL } from "@/lib/plans";
 import { nextStreak } from "@/lib/streak";
 import { lagosDate } from "@/lib/time";
 import { topicBreakdown, xpFor, type TopicResult } from "./results";
@@ -434,6 +434,26 @@ async function afterFinish(tx: Tx, a: MockAttempt, now: Date) {
   const streak = nextStreak(u, lagosDate(now));
   await tx.update(users).set({ xp: u.xp + (a.xpEarned ?? 0), ...streak }).where(eq(users.id, a.userId));
   if (a.mode !== "practice" && u.referredById) await grantReferralRewards(tx, u.referredById, now);
+  await rewardContributors(tx, a, now);
+}
+
+/** "You earn +50 XP when classmates use them": once per upload, the first time someone else practises its questions. */
+async function rewardContributors(tx: Tx, a: MockAttempt, now: Date) {
+  const ids = a.snapshot.map((q) => q.id);
+  if (!ids.length) return;
+  const rewarded = await tx
+    .update(uploads)
+    .set({ classmateXpAt: now })
+    .where(
+      and(
+        isNull(uploads.classmateXpAt),
+        ne(uploads.userId, a.userId),
+        eq(uploads.visibility, "contribute"),
+        inArray(uploads.id, tx.selectDistinct({ id: questions.sourceUploadId }).from(questions).where(and(inArray(questions.id, ids), isNotNull(questions.sourceUploadId)))),
+      ),
+    )
+    .returning({ userId: uploads.userId });
+  for (const r of rewarded) await tx.update(users).set({ xp: sql`${users.xp} + ${CLASSMATE_XP}` }).where(eq(users.id, r.userId));
 }
 
 /** Invite 3 classmates who sign up and finish a mock → a free Week Pass, for every 3. */

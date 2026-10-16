@@ -4,7 +4,8 @@ const nextConfig: NextConfig = {
   // The floating dev badge sits over the bottom action bars of phone layouts.
   devIndicators: false,
   // Embedded Postgres for local dev is loaded from node_modules, not bundled.
-  serverExternalPackages: ["@electric-sql/pglite", "@electric-sql/pglite-pgvector"],
+  // pdf-parse (pdf.js) and officeparser run in Node from node_modules too.
+  serverExternalPackages: ["@electric-sql/pglite", "@electric-sql/pglite-pgvector", "pdf-parse", "officeparser"],
   async headers() {
     return [
       {
