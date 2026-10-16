@@ -27,7 +27,7 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
       <main className="flex flex-col gap-4 px-5 pt-6 lg:px-12 lg:py-10">
         <h1 className="font-display text-[22px] font-bold lg:text-[32px]">Leaderboard</h1>
         <p className="text-[15px] text-ink-muted">Add a course to see how you stack up against your classmates.</p>
-        <ButtonLink href="/courses" className="self-start">Add a course</ButtonLink>
+        <ButtonLink href="/onboarding?edit=1&step=3" className="self-start">Add a course</ButtonLink>
       </main>
     );
   }

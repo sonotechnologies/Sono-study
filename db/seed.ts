@@ -1,6 +1,7 @@
 import { count } from "drizzle-orm";
 import type { Db } from "./index";
 import * as s from "./schema";
+import { SCHOOLS } from "./schools-list";
 import { addDays, lagosDate, weekStart } from "../lib/time";
 
 export const DEMO_USER_ID = "demo-tolu";
@@ -28,8 +29,14 @@ function nextFridayChallengeStart(now: Date): Date {
   return start > now.getTime() ? new Date(start) : addDays(new Date(start), 7);
 }
 
+/** Inserts the seeded school list. Safe to run on every start: existing rows are left alone. */
+export async function ensureSchools(db: Db) {
+  await db.insert(s.schools).values(SCHOOLS).onConflictDoNothing();
+}
+
 export async function seedIfEmpty(db: Db, now: Date = new Date()) {
-  const [{ n }] = await db.select({ n: count() }).from(s.schools);
+  await ensureSchools(db);
+  const [{ n }] = await db.select({ n: count() }).from(s.courses);
   if (n > 0) return false;
   await seed(db, now);
   return true;
@@ -37,17 +44,9 @@ export async function seedIfEmpty(db: Db, now: Date = new Date()) {
 
 export async function seed(db: Db, now: Date = new Date()) {
   const rand = mulberry32(111);
-
-  // Schools & courses
-  const [unilag, yabatech, fce] = await db
-    .insert(s.schools)
-    .values([
-      { id: "sch-unilag", name: "University of Lagos", shortName: "UNILAG", type: "university", state: "Lagos" },
-      { id: "sch-yabatech", name: "Yaba College of Technology", shortName: "YABATECH", type: "poly", state: "Lagos" },
-      { id: "sch-fce-akoka", name: "Federal College of Education (Technical), Akoka", shortName: "FCE Akoka", type: "coe", state: "Lagos" },
-    ])
-    .returning();
-  void fce;
+  await ensureSchools(db);
+  const unilag = { id: "sch-unilag" };
+  const yabatech = { id: "sch-yabatech" };
 
   const [gst, mth, chm, mac] = await db
     .insert(s.courses)
@@ -57,6 +56,8 @@ export async function seed(db: Db, now: Date = new Date()) {
       { id: "crs-chm101", schoolId: unilag.id, code: "CHM101", title: "General Chemistry I" },
       { id: "crs-mac111", schoolId: unilag.id, code: "MAC111", title: "Introduction to Mass Communication" },
       { id: "crs-gns101", schoolId: yabatech.id, code: "GNS101", title: "Use of English I" },
+      { id: "crs-phy101", schoolId: unilag.id, code: "PHY101", title: "General Physics I" },
+      { id: "crs-gst113", schoolId: unilag.id, code: "GST113", title: "Nigerian Peoples and Culture" },
     ])
     .returning();
 
@@ -74,6 +75,7 @@ export async function seed(db: Db, now: Date = new Date()) {
     handle: "tolu",
     anonymous: false,
     referralCode: "tolu",
+    onboardedAt: now,
   });
   await db.insert(s.enrollments).values([
     { userId: DEMO_USER_ID, courseId: gst.id, examDate: addDays(now, 4).toISOString().slice(0, 10) },
@@ -114,9 +116,15 @@ export async function seed(db: Db, now: Date = new Date()) {
     handle: p.handle,
     anonymous: p.anonymous,
     referredById: i < 1 ? DEMO_USER_ID : null,
+    onboardedAt: now,
   }));
   for (let i = 0; i < peers.length; i += 100) await db.insert(s.users).values(peers.slice(i, i + 100));
   await db.insert(s.enrollments).values(peers.map((p) => ({ userId: p.id, courseId: gst.id })));
+  // Other common 100L courses, so "Popular in 100L" has something to suggest.
+  const extra = ["crs-mth101", "crs-phy101", "crs-gst113", "crs-chm101", "crs-mac111"];
+  await db.insert(s.enrollments).values(
+    peers.slice(0, 120).flatMap((p, i) => extra.filter((_, j) => (i + j) % 3 !== 0).map((courseId) => ({ userId: p.id, courseId }))),
+  );
 
   // This week's GST 111 board: designed top nine, then Tolu at #14.
   const week = weekStart(now);

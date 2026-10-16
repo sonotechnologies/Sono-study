@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight, Flame } from "lucide-react";
 import { getDb } from "@/db";
+import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { Card, Pill } from "@/components/ui/primitives";
 import { displayCourseCode } from "@/lib/format";
 import { getCourseBoard } from "@/lib/leaderboard";
@@ -46,6 +47,8 @@ export default async function HomePage() {
           <Pill className="hidden lg:inline-flex">{viewer.xp.toLocaleString("en-NG")} XP</Pill>
         </div>
       </header>
+
+      <InstallPrompt />
 
       <div className="grid gap-3 lg:grid-cols-2 lg:gap-6">
         {course && (

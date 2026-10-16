@@ -43,6 +43,10 @@ export const schools = pgTable("schools", {
   shortName: text("short_name").notNull(),
   type: schoolType("type").notNull(),
   state: text("state").notNull(),
+  town: text("town"),
+  /** Added by a student from onboarding ("Can't find your school?") — pending review. */
+  verified: boolean("verified").notNull().default(true),
+  requestedById: text("requested_by_id"),
 });
 
 export const courses = pgTable(
@@ -86,6 +90,7 @@ export const users = pgTable(
     reminderTime: text("reminder_time").notNull().default("20:00"),
     notifyStreak: boolean("notify_streak").notNull().default(true),
     notifyChallenge: boolean("notify_challenge").notNull().default(false),
+    onboardedAt: ts("onboarded_at"),
     createdAt: createdAt(),
   },
   (t) => [index("users_school_dept_idx").on(t.schoolId, t.department)],
@@ -140,6 +145,8 @@ export const enrollments = pgTable(
       .notNull()
       .references(() => courses.id, { onDelete: "cascade" }),
     examDate: date("exam_date"),
+    /** "09:00", Lagos time. */
+    examTime: text("exam_time"),
     createdAt: createdAt(),
   },
   (t) => [uniqueIndex("enrollments_user_course_idx").on(t.userId, t.courseId)],
@@ -490,3 +497,4 @@ export type User = typeof users.$inferSelect;
 export type Course = typeof courses.$inferSelect;
 export type Challenge = typeof challenges.$inferSelect;
 export type Payment = typeof payments.$inferSelect;
+export type School = typeof schools.$inferSelect;

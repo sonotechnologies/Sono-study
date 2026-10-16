@@ -6,6 +6,7 @@ import { Moon, Sun } from "lucide-react";
 import {
   deleteAccount,
   setTheme,
+  signOutAction,
   updateHandle,
   updateReminderTime,
   updateToggle,
@@ -16,6 +17,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { buttonClass } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
+import { clearOfflinePages } from "@/components/pwa/clear-offline-pages";
 
 const ROW = "flex min-h-[52px] items-center justify-between gap-3 text-[15px]";
 
@@ -157,6 +159,25 @@ export function ThemeRow({ theme }: { theme: "dark" | "light" }) {
   );
 }
 
+export function SignOutRow() {
+  const [pending, start] = useTransition();
+  return (
+    <button
+      type="button"
+      disabled={pending}
+      onClick={() =>
+        start(async () => {
+          await clearOfflinePages().catch(() => {});
+          await signOutAction();
+        })
+      }
+      className={cn(ROW, "w-full")}
+    >
+      Sign out
+    </button>
+  );
+}
+
 export function DeleteAccountRow() {
   const [state, action, pending] = useActionState<DeleteState, FormData>(deleteAccount, { error: null });
   return (
@@ -166,7 +187,13 @@ export function DeleteAccountRow() {
         title="Delete your account?"
         description="This removes your profile, courses, uploads, mock history, flashcards and payments record. Questions you contributed stay in the course bank without your name. This can't be undone."
       >
-        <form action={action} className="flex flex-col gap-4">
+        <form
+          action={action}
+          onSubmit={(e) => {
+            if (new FormData(e.currentTarget).get("confirm") === "DELETE") clearOfflinePages().catch(() => {});
+          }}
+          className="flex flex-col gap-4"
+        >
           <label className="flex flex-col gap-2 text-sm text-ink-muted">
             Type DELETE to confirm
             <input

@@ -13,8 +13,17 @@ export const getViewerId = cache(async (): Promise<string | null> => {
     const session = await auth();
     return session?.user?.id ?? null;
   }
-  return demoMode ? DEMO_USER_ID : null;
+  if (!demoMode) return null;
+  {
+    // Demo/local testing only: /dev/new-student signs you in as a fresh throwaway student.
+    const { cookies } = await import("next/headers");
+    const devUser = (await cookies()).get(DEV_USER_COOKIE)?.value;
+    if (devUser?.startsWith("dev-")) return devUser;
+  }
+  return DEMO_USER_ID;
 });
+
+export const DEV_USER_COOKIE = "sono_dev_user";
 
 export interface Viewer extends User {
   effectivePlan: PlanName;

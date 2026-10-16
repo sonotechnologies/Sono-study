@@ -1,11 +1,14 @@
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import { Sidebar, TabBar } from "@/components/shell/nav";
 import { Paywall } from "@/components/account/paywall";
 import { extendProUntil } from "@/lib/billing";
+import { needsOnboarding } from "@/lib/onboarding";
 import { requireViewer } from "@/lib/viewer";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const viewer = await requireViewer();
+  if (needsOnboarding(viewer)) redirect("/onboarding");
   return (
     <div className="flex min-h-dvh">
       <Sidebar />

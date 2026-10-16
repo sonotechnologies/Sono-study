@@ -6,10 +6,10 @@ import {
   DeleteAccountRow,
   HandleEditor,
   ReminderTime,
+  SignOutRow,
   ThemeRow,
   ToggleRow,
 } from "@/components/account/settings-controls";
-import { signOutAction } from "./actions";
 import { authEnabled } from "@/lib/auth";
 import { cn } from "@/lib/cn";
 import { displayCourseCode, formatDate, formatNaira } from "@/lib/format";
@@ -67,14 +67,14 @@ export default async function ProfilePage() {
       <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-start">
         <div className="contents lg:flex lg:flex-col lg:gap-6">
           <Group label="Study" className="order-1 lg:order-none">
-            <div className={ROW}>
+            <Link href="/onboarding?edit=1&step=1" className={ROW}>
               <span>School</span>
               <span className={VALUE}>
                 <span className="lg:hidden">{studyLine || "Not set"}</span>
-                <span className="hidden lg:inline">{school?.name ?? "Not set"}</span>
+                <span className="hidden lg:inline">{school?.name ?? "Not set"} · Edit</span>
               </span>
-            </div>
-            <Link href="/courses" className={ROW}>
+            </Link>
+            <Link href="/onboarding?edit=1&step=3" className={ROW}>
               <span>Courses</span>
               <span className={VALUE}>
                 <span className="lg:hidden">
@@ -83,7 +83,7 @@ export default async function ProfilePage() {
                 <span className="hidden lg:inline">{codes.join(", ") || "Add courses"}</span>
               </span>
             </Link>
-            <Link href="/courses" className={ROW}>
+            <Link href="/onboarding?edit=1&step=4" className={ROW}>
               <span>Exam dates</span>
               <span className={VALUE}>
                 {examsSet} of {codes.length} set
@@ -142,13 +142,7 @@ export default async function ProfilePage() {
               <span className={VALUE}>JSON file</span>
             </a>
             <ThemeRow theme={theme} />
-            {authEnabled && (
-              <form action={signOutAction}>
-                <button type="submit" className={cn(ROW, "w-full")}>
-                  Sign out
-                </button>
-              </form>
-            )}
+            {authEnabled && <SignOutRow />}
             <DeleteAccountRow />
           </Group>
         </div>

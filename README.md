@@ -28,12 +28,26 @@ npm run lint
 
 ## What's built
 
-**Foundation (part of milestone 1)**
-- Design tokens for dark and light themes (`app/globals.css`), fonts, PWA manifest and icons.
-- App shell: a 248px sidebar on desktop and a bottom tab bar on phones.
-- Full data model from the brief in `db/schema.ts`, with migrations in `db/migrations`.
-- Auth.js wiring, plus a demo mode for local dev.
-- Every plan limit and price lives in `lib/plans.ts`.
+**Milestone 1 — Foundation** ✅
+- **Onboarding** (`/onboarding`, designs 2a–2c), in four steps:
+  1. School search over about 50 seeded Nigerian universities, polytechnics and colleges of education. It filters on the phone and matches "uni lag" → UNILAG. A missing school can be added and stays pending until reviewed.
+  2. Name and handle. Anonymous is the default.
+  3. Department, level and courses by code, with "Popular in 100L" suggestions from classmates.
+  4. Optional exam dates and times.
+- **Redirect:** students who haven't finished onboarding are sent there. Profile → School / Courses / Exam dates reopen the same screens to edit.
+- **Acceptance check:** on a mid-range Android profile (4× CPU slowdown, slow 4G), a scripted student with realistic typing finishes in about 21 seconds. About 4 seconds of that is waiting on the app; the target is under 90.
+- **PWA install:**
+  - Manifest with 192, 512 and maskable PNG icons. Chrome reports no installability errors.
+  - Service worker: pages use network-first with an offline copy, build assets are cached, and `/offline` is the fallback.
+  - "Install Sono Study" card on Home: Chrome uses its install prompt, iPhone gets the Add to Home Screen hint.
+  - Saved pages are cleared on sign-out and account deletion.
+- **Also in place:**
+  - Design tokens for dark and light themes, fonts, and the app shell (248px sidebar on desktop, bottom tab bar on phones).
+  - The full data model from the brief (`db/schema.ts`, migrations in `db/migrations`).
+  - Auth.js wiring, plus a demo mode for local dev.
+  - Every plan limit and price in `lib/plans.ts`.
+
+**Local testing tip:** in demo mode, `/dev/new-student` signs you in as a brand-new student so you can walk through onboarding. `/dev/new-student?reset=1` switches back to the demo student. The route is disabled whenever real sign-in is configured.
 
 **Account screens** (designs 6a–6e desktop, 3a–3i phone)
 | Route | What it does |
@@ -44,6 +58,7 @@ npm run lint
 | `/profile` | Handle, anonymous toggle, notification toggles and reminder time, plan card, theme, data export, account deletion. |
 | `?paywall=1` on any page | Paywall: bottom sheet on phones, modal on desktop. Paystack checkout. |
 | `/billing/callback`, `/api/paystack/webhook`, `/billing/success` | Verify payments server-side and extend `proUntil`. Passes stack, and a payment is applied only once. |
+| `/onboarding` | See Milestone 1 above. |
 | `/upload` | Shows the daily-limit state when today's free uploads are used. Includes the invite link and WhatsApp share. |
 | `/i/[code]` | Invite links. The inviter is recorded when the new student signs up. |
 | `/dev/states` | Dev-only gallery of the queue, limit and payment states and the Home skeleton. |
@@ -61,7 +76,13 @@ The build brief is the source of truth for product rules:
 
 ## Next milestones
 
-The Home dashboard, onboarding, landing page, exam engine, upload pipeline, flashcards, tutor and theory grading are placeholders for now. The brief's build order covers them.
+The brief's build order from here:
+- **Milestone 2:** exam engine, mocks, practice, results.
+- **Milestone 3:** upload and AI pipeline.
+- **Milestone 4:** shared banks and mastery.
+- **Milestone 5:** flashcards, tutor and theory grading.
+
+The Account and social screens in Milestone 6 were built early, from the designs. Home is a simple version until the exam engine provides readiness, the daily plan and "continue mock". Landing page 4a comes with the marketing work.
 
 These hooks already exist for the exam engine to call:
 - `recordWeeklyResult` (leaderboard)
@@ -71,3 +92,4 @@ These hooks already exist for the exam engine to call:
 The exam engine still needs to:
 - Grant the referral reward when a referred student finishes their first mock.
 - Generate the 1080×1920 "new best" story card on results.
+- Cache mocks and flashcards in the service worker for offline use.
