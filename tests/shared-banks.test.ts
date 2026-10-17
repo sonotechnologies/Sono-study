@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { and, eq } from "drizzle-orm";
 import { createPgliteDb, type Db } from "@/db";
-import { banks, courses, enrollments, questions, users } from "@/db/schema";
+import { banks, courses, enrollments, questions, uploads, users } from "@/db/schema";
 import { seed } from "@/db/seed";
 import { setAiProvidersForTests } from "@/lib/ai";
 import { fakeProvider } from "@/lib/ai/fake";
@@ -212,7 +212,11 @@ describe("study plan and readiness", () => {
   });
 
   it("read next points at the student's own notes only", async () => {
-    const adaTopics = await db.select({ topicId: questions.topicId }).from(questions).innerJoin(banks, eq(banks.ownerId, "ada")).where(eq(questions.courseId, GST)).limit(1);
+    const adaTopics = await db
+      .select({ topicId: questions.topicId })
+      .from(questions)
+      .innerJoin(uploads, and(eq(uploads.id, questions.sourceUploadId), eq(uploads.userId, "ada")))
+      .limit(1);
     const ids = [adaTopics[0].topicId!];
     const mine = await readNext(db, "ada", GST, ids);
     expect(mine.length).toBeGreaterThan(0);
