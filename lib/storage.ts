@@ -102,6 +102,17 @@ export async function signedPutUrl(key: string, contentType: string): Promise<Si
   return { key, url: `/api/uploads/local?${q}`, headers: { "Content-Type": contentType } };
 }
 
+/** A short-lived link for the owner to open their own file ("Read next"). Null without R2 (dev streams it instead). */
+export async function signedGetUrl(key: string): Promise<string | null> {
+  if (!KEY.test(key)) return null;
+  const remote = r2();
+  if (!remote) return null;
+  const url = new URL(`${remote.endpoint}/${key}`);
+  url.searchParams.set("X-Amz-Expires", String(SIGNED_URL_TTL_SEC));
+  const signed = await remote.client.sign(new Request(url, { method: "GET" }), { aws: { signQuery: true } });
+  return signed.url;
+}
+
 export async function putObject(key: string, body: Uint8Array, contentType: string): Promise<void> {
   if (!KEY.test(key)) throw new StorageError("Bad file key.");
   const remote = r2();

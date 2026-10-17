@@ -1,11 +1,13 @@
 "use server";
 
 import { and, eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { z } from "zod";
 import { getDb } from "@/db";
 import { uploads } from "@/db/schema";
+import { setUploadSharing } from "@/lib/banks";
 import { ExamError, startAttempt } from "@/lib/exam-engine/service";
 import { confirmUpload, prepareUpload, processQueue, questionSourceId, UploadError, type PrepareResult } from "@/lib/uploads";
 import { requireViewer } from "@/lib/viewer";
@@ -72,4 +74,13 @@ export async function startFromUploadAction(uploadId: string, mode: "mock" | "pr
     throw err;
   }
   redirect(`/mock/${id}`);
+}
+
+/** The contribute toggle after an upload is done. */
+export async function setUploadSharingAction(uploadId: string, contribute: boolean): Promise<{ ok: boolean }> {
+  const viewer = await requireViewer();
+  const ok = await setUploadSharing(await getDb(), viewer.id, uploadId, contribute);
+  revalidatePath("/upload", "layout");
+  revalidatePath("/courses", "layout");
+  return { ok };
 }

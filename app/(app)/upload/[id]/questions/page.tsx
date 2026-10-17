@@ -4,7 +4,12 @@ import { notFound } from "next/navigation";
 import { Check, Pencil } from "lucide-react";
 import { getDb } from "@/db";
 import { TopBar } from "@/components/account/top-bar";
+import { eq } from "drizzle-orm";
+import { courses } from "@/db/schema";
+import { ReportButton } from "@/components/learn/report-button";
 import { RemoveQuestionButton } from "@/components/upload/remove-question";
+import { SharingToggle } from "@/components/upload/sharing-toggle";
+import { displayCourseCode } from "@/lib/format";
 import type { AnswerKey, QuestionOption } from "@/lib/exam-engine/types";
 import { uploadQuestions } from "@/lib/uploads";
 import { requireViewer } from "@/lib/viewer";
@@ -30,16 +35,24 @@ function answerText(answer: AnswerKey, options: QuestionOption[]): string {
 export default async function ReviewQuestionsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const viewer = await requireViewer();
-  const data = await uploadQuestions(await getDb(), viewer.id, id);
+  const db = await getDb();
+  const data = await uploadQuestions(db, viewer.id, id);
   if (!data) notFound();
   const { questions, editable } = data;
+  const [course] = await db.select({ code: courses.code }).from(courses).where(eq(courses.id, data.upload.courseId));
+  const courseCode = displayCourseCode(course?.code ?? "");
   return (
     <main className="mx-auto flex max-w-[720px] flex-col pb-6 lg:pt-6">
       <TopBar back={`/upload/${id}`} heading={`Review · ${questions.length} questions`} />
+      {editable && (
+        <div className="px-5 pb-4 lg:px-0">
+          <SharingToggle uploadId={id} initial={data.upload.visibility === "contribute"} courseCode={courseCode} />
+        </div>
+      )}
       <p className="px-5 pb-3 text-sm leading-normal text-ink-muted lg:px-0">
         {editable
           ? "AI wrote these from your notes. Fix anything that's wrong, or delete it, before your classmates see it."
-          : "These came from a classmate's identical upload and are already in the course bank. Report mistakes from a mock review."}
+          : "These came from a classmate's identical upload and are already in the course bank. Spot a mistake? Report it."}
       </p>
       <ol className="flex flex-col gap-3 px-5 lg:px-0">
         {questions.map((q, i) => (
@@ -59,6 +72,7 @@ export default async function ReviewQuestionsPage({ params }: { params: Promise<
                   <RemoveQuestionButton questionId={q.id} n={i + 1} />
                 </span>
               )}
+              {!editable && <ReportButton questionId={q.id} className="-mr-1 -mt-3" />}
             </div>
             <p className="text-[15px] leading-relaxed">{q.stem}</p>
             {q.options.length > 0 && (

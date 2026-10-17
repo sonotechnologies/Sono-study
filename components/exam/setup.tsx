@@ -11,7 +11,7 @@ import { MASTERY_COLOR } from "@/lib/mastery";
 const COUNTS = [10, 20, 30, 50];
 const TIMES = ["15", "25", "40", "none"] as const;
 
-type Bank = { id: string; title: string; questions: number; attempts: number };
+type Bank = { id: string; title: string; questions: number; subtitle: string; verified: boolean; mine: boolean };
 
 function Tiles<T extends string | number>({
   name,
@@ -67,15 +67,31 @@ function Segmented<T extends string>({ value, options, onChange, label }: { valu
   );
 }
 
-export function MockSetup({ courseId, courseCode, topics, banks, quickTimer }: { courseId: string; courseCode: string; topics: CourseTopic[]; banks: Bank[]; quickTimer: boolean }) {
+export function MockSetup({
+  courseId,
+  courseCode,
+  topics,
+  banks,
+  quickTimer,
+  initial,
+}: {
+  courseId: string;
+  courseCode: string;
+  topics: CourseTopic[];
+  banks: Bank[];
+  quickTimer: boolean;
+  /** Presets from links: a bank to take, or a question count (the study plan's "Timed mock · 30"). */
+  initial?: { bankId?: string | null; count?: number | null };
+}) {
   const [state, action, pending] = useActionState<StartState, FormData>(startMockAction, { error: null });
-  const [mode, setMode] = useState<"own" | "bank">("own");
-  const [count, setCount] = useState(30);
+  const presetBank = banks.some((b) => b.id === initial?.bankId) ? initial!.bankId! : null;
+  const [mode, setMode] = useState<"own" | "bank">(presetBank ? "bank" : "own");
+  const [count, setCount] = useState(COUNTS.includes(initial?.count ?? 0) ? initial!.count! : 30);
   const [time, setTime] = useState<string>("25");
   const [difficulty, setDifficulty] = useState<"mixed" | "easier" | "harder">("mixed");
   const weak = topics.filter((t) => t.label === "weak" || t.label === "shaky").map((t) => t.id);
   const [picked, setPicked] = useState<string[]>(topics.map((t) => t.id));
-  const [bankId, setBankId] = useState<string | null>(banks[0]?.id ?? null);
+  const [bankId, setBankId] = useState<string | null>(presetBank ?? banks[0]?.id ?? null);
 
   const available = topics.filter((t) => picked.includes(t.id)).reduce((s, t) => s + t.questions, 0);
   const actualCount = Math.min(count, available);
@@ -184,10 +200,15 @@ export function MockSetup({ courseId, courseCode, topics, banks, quickTimer }: {
                     )}
                   >
                     <input type="radio" name="bankPick" checked={bankId === b.id} onChange={() => setBankId(b.id)} className="sr-only" />
-                    <span className="flex-1 text-[15px] font-semibold">{b.title}</span>
-                    <span className="text-[13px] text-ink-muted">
-                      {b.questions} Qs · {b.attempts} attempt{b.attempts === 1 ? "" : "s"}
+                    <span className="flex min-w-0 flex-1 flex-col py-2">
+                      <span className="truncate text-[15px] font-semibold">{b.title}</span>
+                      <span className="text-[13px] text-ink-muted">{b.subtitle}</span>
                     </span>
+                    {b.verified ? (
+                      <span className="text-[13px] font-semibold text-correct">Verified</span>
+                    ) : b.mine ? (
+                      <span className="text-[13px] text-ink-muted">Yours</span>
+                    ) : null}
                   </label>
                 ))}
               </fieldset>

@@ -1,3 +1,4 @@
+import { ReportButton } from "@/components/learn/report-button";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Check, X } from "lucide-react";
@@ -86,13 +87,21 @@ export default async function ReviewPage({ params }: { params: Promise<{ attempt
           </ul>
         )}
 
-        {(q.explanation || q.sourceLabel) && (
-          <Card className="flex flex-col gap-2 p-4">
-            <h2 className="font-display text-base font-bold">Why</h2>
-            {q.explanation && <p className="text-[15px] leading-[1.6]">{q.explanation}</p>}
-            {q.sourceLabel && <span className="text-[13px] font-semibold text-accent">{q.sourceLabel}</span>}
-          </Card>
-        )}
+        <Card className="flex flex-col gap-2 p-4">
+          {q.explanation && (
+            <>
+              <h2 className="font-display text-base font-bold">Why</h2>
+              <p className="text-[15px] leading-[1.6]">{q.explanation}</p>
+            </>
+          )}
+          <div className="flex flex-wrap items-center justify-between gap-x-3">
+            <span className="flex flex-col">
+              {q.sourceLabel && <span className="text-[13px] font-semibold text-accent">{q.sourceLabel}</span>}
+              {q.sourceLabel && <span className="text-xs text-ink-muted">AI-generated from notes{q.isPastQuestion ? " · past question" : ""}</span>}
+            </span>
+            <ReportButton questionId={q.id} className="-my-2" />
+          </div>
+        </Card>
       </div>
 
       <div className="sticky bottom-[calc(64px+env(safe-area-inset-bottom))] grid grid-cols-2 gap-2 bg-bg px-5 pb-5 pt-3 lg:bottom-0 lg:px-0">

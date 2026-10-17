@@ -10,11 +10,14 @@ import {
   ThemeRow,
   ToggleRow,
 } from "@/components/account/settings-controls";
+import { getDb } from "@/db";
+import { isAdmin } from "@/lib/admin";
 import { authEnabled } from "@/lib/auth";
 import { cn } from "@/lib/cn";
 import { displayCourseCode, formatDate, formatNaira } from "@/lib/format";
 import { anonymousName } from "@/lib/identity";
 import { PASSES, planSummary } from "@/lib/plans";
+import { openReportCount } from "@/lib/reports";
 import { requireViewer } from "@/lib/viewer";
 
 export const metadata: Metadata = { title: "Profile" };
@@ -145,6 +148,15 @@ export default async function ProfilePage() {
             {authEnabled && <SignOutRow />}
             <DeleteAccountRow />
           </Group>
+
+          {isAdmin(viewer) && (
+            <Group label="Admin" className="order-6 lg:order-none">
+              <Link href="/admin/reports" className={ROW}>
+                <span>Reported questions</span>
+                <span className={VALUE}>{await openReportCount(await getDb())} open</span>
+              </Link>
+            </Group>
+          )}
         </div>
       </div>
     </main>

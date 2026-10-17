@@ -6,6 +6,10 @@ import { getDb } from "@/db";
 import { retakeAction, startPracticeAction } from "@/app/(app)/courses/actions";
 import { ScoreCountUp } from "@/components/exam/score-count-up";
 import { ShareResultButton } from "@/components/exam/share-result-button";
+import { RateBank } from "@/components/learn/rate-bank";
+import { banks } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { myBankRating } from "@/lib/banks";
 import { TopBar } from "@/components/account/top-bar";
 import { buttonClass, Card } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
@@ -39,6 +43,10 @@ export default async function ResultsPage({ params, searchParams }: { params: Pr
   const missed = r.items.filter((i) => !i.isCorrect);
   const code = displayCourseCode(r.courseCode);
   const pct = max ? Math.round((score / max) * 100) : 0;
+  // A classmate's (or seeded) bank: ask for a rating.
+  const [bank] = a.bankId ? await db.select({ id: banks.id, title: banks.title, ownerId: banks.ownerId }).from(banks).where(eq(banks.id, a.bankId)) : [];
+  const rateable = bank && bank.ownerId !== viewer.id && a.mode === "mock" ? bank : null;
+  const myRating = rateable ? await myBankRating(db, viewer.id, rateable.id) : null;
 
   const tiles = newBest
     ? [
@@ -114,6 +122,8 @@ export default async function ResultsPage({ params, searchParams }: { params: Pr
             ))}
           </section>
         )}
+
+        {rateable && <RateBank bankId={rateable.id} title={rateable.title} initial={myRating} />}
 
         <div className="grid grid-cols-[1fr_2fr] gap-2 lg:flex lg:gap-2.5">
           {newBest ? (

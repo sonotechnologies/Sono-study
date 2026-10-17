@@ -60,3 +60,14 @@ export function ordinal(n: number): string {
 export function displayCourseCode(code: string): string {
   return code.replace(/^([A-Z]+)(\d+)/, "$1 $2");
 }
+
+/** "today", "yesterday", "3 days ago", "last week", "2 weeks ago", then the date. */
+export function timeAgo(d: Date, now: Date = new Date()): string {
+  const days = Math.floor((now.getTime() - d.getTime()) / 86_400_000);
+  if (days <= 0) return "today";
+  if (days === 1) return "yesterday";
+  if (days < 7) return `${days} days ago`;
+  if (days < 14) return "last week";
+  if (days < 35) return `${Math.floor(days / 7)} weeks ago`;
+  return formatDate(d, { year: false });
+}

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Check, ChevronLeft, X } from "lucide-react";
 import { checkPracticeAnswer, finishPractice } from "@/app/mock/[attemptId]/actions";
 import { buttonClass } from "@/components/ui/primitives";
+import { ReportButton } from "@/components/learn/report-button";
 import { cn } from "@/lib/cn";
 import type { PracticeFeedback } from "@/lib/exam-engine/service";
 import type { AttemptResponse, RuntimePayload, RuntimeQuestion } from "@/lib/exam-engine/types";
@@ -83,7 +84,13 @@ export function PracticeRuntime({ payload, topicLabel, initial }: { payload: Run
             <span className={cn("text-sm font-semibold", done.feedback.isCorrect ? "text-correct" : "text-wrong")}>{done.feedback.isCorrect ? "Correct" : "Not quite"}</span>
             {q.type === "fill_in" && !done.feedback.isCorrect && <span className="text-[15px]">Answer: {done.feedback.accepted[0]}</span>}
             {done.feedback.explanation && <p className="text-[15px] leading-[1.6]">{done.feedback.explanation}</p>}
-            {done.feedback.sourceLabel && <span className="text-[13px] font-semibold text-accent">{done.feedback.sourceLabel}</span>}
+            <div className="flex flex-wrap items-center justify-between gap-x-3">
+              <span className="flex flex-col">
+                {done.feedback.sourceLabel && <span className="text-[13px] font-semibold text-accent">{done.feedback.sourceLabel}</span>}
+                {done.feedback.sourceLabel && <span className="text-xs text-ink-muted">AI-generated from notes</span>}
+              </span>
+              <ReportButton key={q.id} questionId={q.id} className="-my-2" />
+            </div>
           </div>
         )}
       </main>

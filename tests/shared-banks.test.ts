@@ -160,6 +160,7 @@ describe("study plan and readiness", () => {
 
   it("readiness weighs topics by bank size (capped) and counts untried topics as 0", () => {
     expect(readiness([])).toBeNull();
+    expect(readiness([topic("a", 10, null)])).toBeNull(); // nothing practised yet
     expect(readiness([topic("a", 10, 1), topic("b", 10, null)])).toBe(0.5);
     expect(readiness([topic("a", 300, 1), topic("b", 30, 0)])).toBe(0.5); // capped at 30 each
     expect(readiness([topic("a", 2, 0), topic("b", 10, 0.8)])).toBe(0.8); // tiny topics ignored

@@ -1,6 +1,6 @@
 import { and, asc, count, eq, ne, or } from "drizzle-orm";
 import type { Db } from "@/db";
-import { banks, questions, topicMastery, topics } from "@/db/schema";
+import { flashcards, questions, topicMastery, topics, uploads } from "@/db/schema";
 import { masteryLabel, type MasteryLabel } from "./mastery";
 
 export type CourseTopic = { id: string; name: string; questions: number; mastery: number | null; label: MasteryLabel | null };
@@ -24,10 +24,12 @@ export async function courseTopics(db: Db, userId: string, courseId: string): Pr
   }));
 }
 
-export async function courseBanks(db: Db, userId: string, courseId: string) {
-  return db
-    .select({ id: banks.id, title: banks.title, questionIds: banks.questionIds, attempts: banks.attempts, isShared: banks.isShared })
-    .from(banks)
-    .where(and(eq(banks.courseId, courseId), or(eq(banks.isShared, true), eq(banks.ownerId, userId))))
-    .orderBy(asc(banks.title));
+/** Flashcards a student can study on a course: shared ones plus those from their own uploads. */
+export async function courseFlashcardCount(db: Db, userId: string, courseId: string): Promise<number> {
+  const [row] = await db
+    .select({ n: count() })
+    .from(flashcards)
+    .leftJoin(uploads, eq(uploads.id, flashcards.sourceUploadId))
+    .where(and(eq(flashcards.courseId, courseId), or(eq(flashcards.visibility, "shared"), eq(uploads.userId, userId))));
+  return Number(row?.n ?? 0);
 }

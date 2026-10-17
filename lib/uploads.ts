@@ -637,13 +637,25 @@ export async function getUploadView(db: Db, userId: string, uploadId: string, no
   };
 }
 
-/** The student's recent uploads (newest first). */
-export async function recentUploads(db: Db, userId: string, limit = 5) {
+/** The student's recent uploads (newest first), optionally for one course. */
+export async function recentUploads(db: Db, userId: string, limit = 5, courseId?: string) {
   return db
-    .select({ id: uploads.id, title: uploads.title, status: uploads.status, questionsMade: uploads.questionsMade, courseId: uploads.courseId, courseCode: courses.code, completedAt: uploads.completedAt, createdAt: uploads.createdAt })
+    .select({
+      id: uploads.id,
+      title: uploads.title,
+      type: uploads.type,
+      fileCount: sql<number>`cardinality(${uploads.fileKeys})`,
+      status: uploads.status,
+      questionsMade: uploads.questionsMade,
+      visibility: uploads.visibility,
+      courseId: uploads.courseId,
+      courseCode: courses.code,
+      completedAt: uploads.completedAt,
+      createdAt: uploads.createdAt,
+    })
     .from(uploads)
     .innerJoin(courses, eq(courses.id, uploads.courseId))
-    .where(and(eq(uploads.userId, userId), sql`coalesce(${uploads.statusLine}, '') <> 'Uploading'`))
+    .where(and(eq(uploads.userId, userId), courseId ? eq(uploads.courseId, courseId) : undefined, sql`coalesce(${uploads.statusLine}, '') <> 'Uploading'`))
     .orderBy(desc(uploads.createdAt))
     .limit(limit);
 }

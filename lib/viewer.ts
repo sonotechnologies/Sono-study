@@ -28,7 +28,7 @@ export const DEV_USER_COOKIE = "sono_dev_user";
 export interface Viewer extends User {
   effectivePlan: PlanName;
   school: { name: string; shortName: string } | null;
-  courses: { id: string; code: string; title: string; examDate: string | null }[];
+  courses: { id: string; code: string; title: string; examDate: string | null; examTime: string | null }[];
 }
 
 /** The signed-in student with school and enrolled courses. Redirects to /login when signed out. */
@@ -43,7 +43,7 @@ export const requireViewer = cache(async (): Promise<Viewer> => {
     .where(eq(users.id, id));
   if (!row) redirect("/login");
   const enrolled = await db
-    .select({ id: courses.id, code: courses.code, title: courses.title, examDate: enrollments.examDate })
+    .select({ id: courses.id, code: courses.code, title: courses.title, examDate: enrollments.examDate, examTime: enrollments.examTime })
     .from(enrollments)
     .innerJoin(courses, eq(courses.id, enrollments.courseId))
     .where(eq(enrollments.userId, id))

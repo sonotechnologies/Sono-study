@@ -24,6 +24,7 @@ For a real setup copy `.env.example` to `.env.local`, then `npm run db:migrate &
 npm test           # unit + database tests (PGlite, no server needed)
 npm run build && npm run e2e:m2   # Milestone 2 acceptance in a real browser
 npm run build && npm run e2e:m3   # Milestone 3 acceptance (upload → questions, reuse, provider failover)
+npm run build && npm run e2e:m4   # Milestone 4 acceptance (a classmate sees and practises shared questions)
 npm run typecheck
 npm run lint
 ```
@@ -124,6 +125,35 @@ The engine in `lib/exam-engine` is ported from SonoCBT's exam runtime: `lib/exam
   - with `AI_FORCE_FAIL` on the first provider, every chunk is made by the second and the first is cooling down
 - **Tests:** `tests/upload-pipeline.test.ts` and `tests/ai-ingest.test.ts` cover these and the Gemini/Groq adapters with mocked HTTP, extraction of PDF, PPTX and DOCX, chunking, topic merging and validation.
 
+**Milestone 4 — Shared banks and mastery** ✅ (designs 2d, 1e with 1d's plan, 4b)
+- **Course banks (`lib/banks.ts`):**
+  - Every finished upload becomes a bank. With "Share with your class" on, its questions join the course for that school only (courses are per school + code).
+  - The course page lists the seeded sample paper (**Verified**), classmates' banks with question count, students who took them and rating, and the class bank (every contributed question).
+  - Banks open the mock setup preselected. Practising them costs no AI, so it's unlimited on every plan.
+- **Contribute toggle after the fact:** on an upload's review page. Questions, flashcards and the bank follow it; the file never leaves.
+- **Ratings:** after finishing a mock from someone else's bank, the results screen asks for 1–5 stars. Banks with 3+ ratings sort by rating.
+- **Reporting (`lib/reports.ts`):**
+  - Report is on the review screen, in practice feedback, and on classmates' questions, with reasons wrong answer / off-topic / copied / inappropriate plus a note.
+  - 3 open reports hide a question pending review.
+  - `/admin/reports` lists reported questions (auto-hidden first) with reasons and notes. Restore or Remove. Admins come from `ADMIN_EMAILS`; in local demo mode anyone can open it.
+- **AI labels:** explanations of questions made from notes say "AI-generated from notes".
+- **Readiness and plan (`lib/study-plan.ts`):**
+  - **Readiness:** mastery across the course's topics, weighted by bank size (capped at 30 per topic). Untried topics count as 0, and a course with nothing practised shows "not started". A daily snapshot gives "+6% this week".
+  - **Today's plan:** sized by days to the exam, as 10, 15 or 20 questions on the weakest topic, plus a timed mock (30 questions in the last week). Items tick themselves off from today's answers.
+  - **Free vs Pro:** Free gets two items. Pro gets up to four, plus a day-by-day plan to the exam.
+- **Course page (`/courses/[id]`, 2d):**
+  - readiness ring and trend, exam countdown
+  - topic chips coloured by mastery (tap to practise), flashcards and tutor tiles, Start a mock
+  - Today's plan
+  - **Read next:** for weak topics, the pages of your own notes those questions came from. `/api/uploads/[id]/file` opens your file at that page, via a 10-minute signed link, owner only.
+  - shared banks, my uploads, this week's board with your row highlighted
+  - exam date and time
+- **Home (1e + 1d, desktop 4b):** the next exam's readiness ring, "Start 30-question mock", "Fix 3 weak topics", Flashcards and Plan tiles, Today's plan, and your courses sorted weakest first.
+- **Acceptance, checked in a real browser against a production build:** `npm run build && npm run e2e:m4`.
+  - Ada uploads with sharing on. Bisi, at the same school and on the same course, sees Ada's bank on the course page, takes it (the mock is Ada's questions) and rates it, and Ada gets +50 XP.
+  - When Ada turns sharing off, the bank disappears for Bisi.
+  - `tests/shared-banks.test.ts` covers the same at service level, plus another school's GST 111 never seeing it, reporting, ratings, readiness and the plan.
+
 **Setting up AI and storage**
 1. **Gemini (required for real questions):** get a free key at aistudio.google.com and set `GEMINI_API_KEY`. `GEMINI_MODEL` takes a comma-separated fallback list. Check the current free-tier models and limits when you set it up, because they change often. `GEMINI_EMBED_MODEL` defaults to `gemini-embedding-001`.
 2. **Groq (optional fallback):** a free key from console.groq.com in `GROQ_API_KEY`. `GROQ_MODEL` is optional.
@@ -142,6 +172,7 @@ The engine in `lib/exam-engine` is ported from SonoCBT's exam runtime: `lib/exam
 | `?paywall=1` on any page | Paywall: bottom sheet on phones, modal on desktop. Paystack checkout. |
 | `/billing/callback`, `/api/paystack/webhook`, `/billing/success` | Verify payments server-side and extend `proUntil`. Passes stack, and a payment is applied only once. |
 | `/onboarding` | See Milestone 1 above. |
+| `/admin/reports` | Reported questions, for admins (`ADMIN_EMAILS`). Linked from Profile. |
 | `/upload` | When today's uploads or AI questions are used up, shows the daily-limit state, with the invite link and WhatsApp share. |
 | `/i/[code]` | Invite links. The inviter is recorded when the new student signs up. |
 | `/dev/states` | Dev-only gallery of the queue, limit and payment states and the Home skeleton. |
@@ -160,8 +191,7 @@ The build brief is the source of truth for product rules:
 ## Next milestones
 
 The brief's build order from here:
-- **Milestone 4:** shared banks and mastery: the full course page, reporting, and the study plan with readiness.
-- **Milestone 5:** flashcards, tutor and theory grading.
+- **Milestone 5:** flashcards (SM-2 reviews, so the Flashcards tiles get a due count), the tutor with citations, and theory grading.
 
 The Account and social screens in Milestone 6 were built early, from the designs. Landing page 4a comes with the marketing work.
 

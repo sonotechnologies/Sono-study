@@ -71,3 +71,9 @@ export async function retakeAction(attemptId: string) {
   }
   redirect(`/mock/${id}`);
 }
+
+/** A study-plan item: practise a set number of questions on one topic (sessions max out at 30). */
+export async function startPlanPracticeAction(courseId: string, topicId: string, count: number) {
+  const res = await start({ mode: "practice", courseId, topicIds: [topicId], count: Math.max(5, Math.min(30, Math.round(count) || 10)) });
+  if (res.error) redirect(`/courses/${courseId}?error=${encodeURIComponent(res.error)}`);
+}

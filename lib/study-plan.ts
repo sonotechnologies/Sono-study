@@ -18,7 +18,8 @@ const MIN_TOPIC_QUESTIONS = 3;
 
 export function readiness(topicList: Pick<CourseTopic, "questions" | "mastery">[]): number | null {
   const usable = topicList.filter((t) => t.questions >= MIN_TOPIC_QUESTIONS);
-  if (!usable.length) return null;
+  // Nothing practised yet: "not started", not "0% · weak".
+  if (!usable.length || usable.every((t) => t.mastery === null)) return null;
   let total = 0;
   let got = 0;
   for (const t of usable) {
