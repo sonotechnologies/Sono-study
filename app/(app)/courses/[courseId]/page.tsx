@@ -134,9 +134,14 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
             </Link>
           </div>
 
-          <ButtonLink href={`/courses/${courseId}/mock`} size="lg">
-            Start a mock
-          </ButtonLink>
+          <div className="grid grid-cols-[2fr_1fr] gap-2">
+            <ButtonLink href={`/courses/${courseId}/mock`} size="lg">
+              Start a mock
+            </ButtonLink>
+            <ButtonLink href={`/courses/${courseId}/theory`} variant="secondary" size="lg">
+              Theory
+            </ButtonLink>
+          </div>
 
           <PlanCard plan={snap.plan} courseId={courseId} courseCode={code} hasExamDate={!!course.examDate} />
 

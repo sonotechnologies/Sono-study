@@ -6,7 +6,7 @@ import type { z } from "zod";
 
 export type AiPart = { text: string } | { image: { mimeType: string; base64: string } };
 
-export type AiTask = "generate_questions" | "past_questions" | "flashcards" | "read_image" | "answer_from_notes" | "grade_theory";
+export type AiTask = "generate_questions" | "past_questions" | "flashcards" | "read_image" | "answer_from_notes" | "grade_theory" | "rubric";
 
 export type AiRequest<T> = {
   task: AiTask;

@@ -15,7 +15,7 @@ const LETTERS = ["A", "B", "C", "D", "E", "F"];
 
 type Checked = { response: AttemptResponse; feedback: PracticeFeedback };
 
-export function PracticeRuntime({ payload, topicLabel, initial }: { payload: RuntimePayload; topicLabel: string; initial: Record<string, Checked> }) {
+export function PracticeRuntime({ payload, topicLabel, initial, tutorHref }: { payload: RuntimePayload; topicLabel: string; initial: Record<string, Checked>; tutorHref: string }) {
   const qs = payload.questions;
   const firstOpen = qs.findIndex((q) => !initial[q.id]);
   const [index, setIndex] = useState(firstOpen === -1 ? qs.length - 1 : firstOpen);
@@ -96,7 +96,7 @@ export function PracticeRuntime({ payload, topicLabel, initial }: { payload: Run
       </main>
 
       <div className="sticky bottom-0 grid grid-cols-[1fr_2fr] gap-2 bg-bg px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-3">
-        <Link href="/tutor" className={buttonClass("secondary", "lg", "text-[15px]")}>
+        <Link href={tutorHref} className={buttonClass("secondary", "lg", "text-[15px]")}>
           Ask tutor
         </Link>
         {done ? (

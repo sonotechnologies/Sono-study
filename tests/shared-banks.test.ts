@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { and, eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { createPgliteDb, type Db } from "@/db";
 import { banks, courses, enrollments, questions, uploads, users } from "@/db/schema";
 import { seed } from "@/db/seed";
@@ -51,7 +51,9 @@ async function upload(userId: string, bytes: Uint8Array, contribute: boolean) {
   return prep.uploadId;
 }
 
-const ownIds = async (uploadId: string) => (await db.select({ id: questions.id }).from(questions).where(eq(questions.sourceUploadId, uploadId))).map((q) => q.id);
+/** The upload's objective questions (theory questions never go into mocks or banks). */
+const ownIds = async (uploadId: string) =>
+  (await db.select({ id: questions.id }).from(questions).where(and(eq(questions.sourceUploadId, uploadId), ne(questions.type, "theory")))).map((q) => q.id);
 
 describe("shared course banks (Milestone 4 acceptance)", () => {
   let uploadId: string;

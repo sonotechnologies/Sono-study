@@ -76,7 +76,12 @@ function makeQuestions(input: GenerateInput): GeneratedSet {
     }
   }
   const flashcards = facts.slice(0, input.flashcardCount).map((f) => ({ front: blank(f.s, f.term), back: f.term, topic }));
-  return { topic, questions, flashcards };
+  const points = facts.slice(0, 3).map((f) => ({ point: f.s.replace(/[.!?]$/, ""), marks: 2 }));
+  const theory =
+    input.theoryCount && points.length >= 2
+      ? [{ question: `Explain ${topic.toLowerCase()}, with examples from your notes.`, topic, rubric: points, modelAnswer: facts.slice(0, 3).map((f) => f.s).join(" ") }]
+      : [];
+  return { topic, questions, flashcards, theory };
 }
 
 function parsePaper(input: PastPaperInput): GeneratedSet {
@@ -94,7 +99,7 @@ function parsePaper(input: PastPaperInput): GeneratedSet {
     questions.push({ type: "single", topic, stem, options, correct: [longest], answer: "", explanation: "Offline test provider: answer not checked.", difficulty: "medium" });
     if (questions.length >= input.max) break;
   }
-  return { topic, questions, flashcards: [] };
+  return { topic, questions, flashcards: [], theory: [] };
 }
 
 function words(s: string) {
@@ -145,16 +150,31 @@ export function fakeProvider(name = "fake"): AiProvider {
           break;
         }
         case "answer_from_notes": {
-          const ctx = req.context as { question: string; chunks: TutorChunk[] };
-          const q = words(ctx.question);
+          const ctx = req.context as { question: string; chunks: TutorChunk[]; previous?: { question: string } | null; instruction?: string | null };
+          const q = words(ctx.instruction && ctx.previous ? ctx.previous.question : ctx.question);
           const ranked = ctx.chunks.map((c) => ({ c, n: overlap(q, words(c.text)) })).sort((a, b) => b.n - a.n);
           const best = ranked[0];
-          if (!best || best.n === 0) {
+          // "Covered" needs real overlap with the question, not one shared word.
+          if (!best || best.n < Math.min(2, q.size)) {
             reply = { answer: "Your notes don't cover that yet. Upload the notes for this topic and ask again.", citedChunkIds: [], notInNotes: true };
           } else {
             const sentence = sentencesOf(best.c.text).sort((a, b) => overlap(q, words(b)) - overlap(q, words(a)))[0] ?? best.c.text.slice(0, 200);
-            reply = { answer: `From your notes (${best.c.label}): ${sentence}`, citedChunkIds: [best.c.id], notInNotes: false };
+            const lead = ctx.instruction ? `${ctx.instruction.replace(/\.$/, "")}: ` : "";
+            reply = { answer: `${lead}From your notes (${best.c.label}): ${sentence}`, citedChunkIds: [best.c.id], notInNotes: false };
           }
+          break;
+        }
+        case "rubric": {
+          const ctx = req.context as { question: string; marks: number; notes: string | null };
+          const sents = sentencesOf(ctx.notes ?? "").slice(0, 3);
+          const per = Math.max(1, Math.floor(ctx.marks / Math.max(1, sents.length || 2)));
+          const rubric = sents.length
+            ? sents.map((s) => ({ point: s.replace(/[.!?]$/, ""), marks: per }))
+            : [
+                { point: `Defines the key term in: ${ctx.question}`, marks: per },
+                { point: "Gives a relevant example", marks: per },
+              ];
+          reply = { rubric, modelAnswer: sents.join(" ") };
           break;
         }
         case "grade_theory": {

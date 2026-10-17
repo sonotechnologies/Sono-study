@@ -141,3 +141,33 @@ export async function makeNotesPdf(n = 20): Promise<Uint8Array> {
   }
   return doc.save();
 }
+
+/** Six pages, each fact on exactly one page: for checking the tutor cites the right page. */
+export const TUTOR_PAGES: { heading: string; lines: string[] }[] = [
+  { heading: "Course outline", lines: ["This course covers listening, barriers to communication, concord and essay writing.", "Attendance at tutorials is compulsory for the continuous assessment."] },
+  { heading: "Hearing and listening", lines: ["Hearing is the passive, physical process of sound waves reaching the ear.", "Listening is deliberate: the listener pays attention, interprets and responds."] },
+  { heading: "Stages of listening", lines: ["The four stages of listening are receiving, understanding, evaluating and responding.", "Feedback in the responding stage shows the speaker how the message was received."] },
+  { heading: "Semantic noise", lines: ["Semantic noise happens when the sender and receiver attach different meanings to the same words.", "Jargon, slang and ambiguous words are common causes of semantic noise."] },
+  { heading: "Subject-verb concord", lines: ["Subject-verb concord is the rule that a verb agrees with its subject in number.", "Collective nouns take a singular verb when the group acts as one unit."] },
+  { heading: "Thesis statements", lines: ["A thesis statement is the sentence that states the central argument of an essay.", "It usually comes at the end of the introductory paragraph."] },
+];
+
+export async function makeTutorPdf(): Promise<Uint8Array> {
+  const doc = await PDFDocument.create();
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+  for (const page of TUTOR_PAGES) {
+    const p = doc.addPage([595, 842]);
+    let y = 790;
+    p.drawText(page.heading, { x: 50, y, size: 18, font: bold });
+    y -= 34;
+    for (const para of page.lines) {
+      for (const l of wrap(para)) {
+        p.drawText(l, { x: 50, y, size: 11, font });
+        y -= 16;
+      }
+      y -= 8;
+    }
+  }
+  return doc.save();
+}

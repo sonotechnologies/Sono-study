@@ -206,6 +206,7 @@ export async function reuseInto(db: Db, target: Upload, source: Upload, now = ne
         options: q.options,
         answer: q.answer,
         explanation: q.explanation,
+        rubric: q.rubric,
         sourceLabel: q.sourceLabel?.replace(/^.*? · /, `${target.title} · `) ?? null,
         difficulty: q.difficulty,
         isPastQuestion: q.isPastQuestion,
@@ -413,12 +414,12 @@ export const generateChunk: Handler = async (db, job) => {
   const n = Math.max(0, Math.min(chunk.questionTarget, left));
   const knownTopics = (await db.select({ name: topics.name }).from(topics).where(eq(topics.courseId, u.courseId))).map((t) => t.name);
 
-  let set: GeneratedSet = { topic: heading ?? "", questions: [], flashcards: [] };
+  let set: GeneratedSet = { topic: heading ?? "", questions: [], flashcards: [], theory: [] };
   let provider: string | null = null;
   try {
     const res = u.isPastPaper
       ? await ai.extractPastQuestions(db, { course, text: chunk.text, label: chunk.label ?? "", max: n, knownTopics })
-      : await ai.generateQuestions(db, { course, text: chunk.text, label: chunk.label ?? "", questionCount: n, flashcardCount: flashcardTarget(chunk.text, n), knownTopics });
+      : await ai.generateQuestions(db, { course, text: chunk.text, label: chunk.label ?? "", questionCount: n, flashcardCount: flashcardTarget(chunk.text, n), theoryCount: n > 0 ? 1 : 0, knownTopics });
     set = res.value;
     provider = res.provider;
   } catch (err) {
@@ -465,11 +466,31 @@ export const generateChunk: Handler = async (db, job) => {
     fRows.push({ courseId: u.courseId, topicId: await topicIdFor(f.topic || chunkTopic), front, back, sourceUploadId: u.id, sourceLabel, visibility });
   }
 
+  const tRows: (typeof questions.$inferInsert)[] = [];
+  for (const t of set.theory ?? []) {
+    const rubric = t.rubric.map((r) => ({ point: r.point.trim().slice(0, 300), marks: r.marks }));
+    tRows.push({
+      courseId: u.courseId,
+      topicId: await topicIdFor(t.topic || chunkTopic),
+      sourceUploadId: u.id,
+      type: "theory",
+      stem: t.question.trim().slice(0, 2000),
+      options: [],
+      answer: { kind: "theory", modelAnswer: t.modelAnswer.trim().slice(0, 4000) },
+      rubric,
+      explanation: null,
+      difficulty: 2,
+      sourceLabel,
+      visibility,
+    });
+  }
+
   await db.transaction(async (tx) => {
     const claimed = await tx.update(chunks).set({ generatedAt: new Date(), topic: chunkTopic }).where(and(eq(chunks.id, chunk.id), isNull(chunks.generatedAt))).returning({ id: chunks.id });
     if (!claimed.length) return; // another worker finished it
     if (qRows.length) await tx.insert(questions).values(qRows);
     if (fRows.length) await tx.insert(flashcards).values(fRows);
+    if (tRows.length) await tx.insert(questions).values(tRows);
     if (qRows.length) await recordUsage(tx as unknown as Db, u.userId, "ai_questions", qRows.length);
     await chunkFinished(tx as unknown as Db, u.id, qRows.length, fRows.length);
   });
@@ -602,7 +623,7 @@ export async function getUploadView(db: Db, userId: string, uploadId: string, no
       .select({ name: topics.name, n: count() })
       .from(questions)
       .innerJoin(topics, eq(topics.id, questions.topicId))
-      .where(and(eq(questions.sourceUploadId, sourceId), eq(questions.status, "active")))
+      .where(and(eq(questions.sourceUploadId, sourceId), eq(questions.status, "active"), ne(questions.type, "theory")))
       .groupBy(topics.name)
       .orderBy(desc(count()));
     topicCounts = rows.map((r) => ({ name: r.name, count: Number(r.n) }));

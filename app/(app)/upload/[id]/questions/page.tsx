@@ -16,7 +16,7 @@ import { requireViewer } from "@/lib/viewer";
 
 export const metadata: Metadata = { title: "Review questions" };
 
-const TYPE: Record<string, string> = { single: "One answer", multiple: "Several answers", true_false: "True/false", fill_in: "Fill in" };
+const TYPE: Record<string, string> = { single: "One answer", multiple: "Several answers", true_false: "True/false", fill_in: "Fill in", theory: "Theory" };
 
 function answerText(answer: AnswerKey, options: QuestionOption[]): string {
   const text = (id: string) => options.find((o) => o.id === id)?.text ?? id;
@@ -68,7 +68,7 @@ export default async function ReviewQuestionsPage({ params }: { params: Promise<
               </span>
               {editable && (
                 <span className="-mr-2 -mt-2 flex items-center">
-                  <Link href={`/upload/${id}/questions/${q.id}`} aria-label={`Edit question ${i + 1}`} className="grid size-11 place-items-center rounded-full text-ink-muted hover:bg-surface-2">
+                  <Link href={q.type === "theory" ? `/theory/${q.id}` : `/upload/${id}/questions/${q.id}`} aria-label={`Edit question ${i + 1}`} className="grid size-11 place-items-center rounded-full text-ink-muted hover:bg-surface-2">
                     <Pencil size={18} aria-hidden />
                   </Link>
                   <RemoveQuestionButton questionId={q.id} n={i + 1} />

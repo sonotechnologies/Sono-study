@@ -17,7 +17,7 @@ export async function ensureUploadBank(db: Db, uploadId: string): Promise<string
     await db
       .select({ id: questions.id })
       .from(questions)
-      .where(and(eq(questions.sourceUploadId, u.id), eq(questions.status, "active")))
+      .where(and(eq(questions.sourceUploadId, u.id), eq(questions.status, "active"), ne(questions.type, "theory")))
       .orderBy(asc(questions.sourceLabel), asc(questions.createdAt))
   ).map((q) => q.id);
   if (!ids.length) return null;

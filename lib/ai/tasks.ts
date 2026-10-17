@@ -39,12 +39,28 @@ const flashcardSchema = {
   properties: { front: { type: "STRING" }, back: { type: "STRING" }, topic: { type: "STRING" } },
   required: ["front", "back"],
 };
+const rubricSchema = {
+  type: "ARRAY",
+  items: { type: "OBJECT", properties: { point: { type: "STRING" }, marks: { type: "INTEGER" } }, required: ["point", "marks"] },
+  description: "Marking guide: the key points a full answer makes, each with its marks.",
+};
+const theorySchema = {
+  type: "OBJECT",
+  properties: {
+    question: { type: "STRING" },
+    topic: { type: "STRING" },
+    rubric: rubricSchema,
+    modelAnswer: { type: "STRING", description: "A model answer that earns full marks, from the notes." },
+  },
+  required: ["question", "rubric", "modelAnswer"],
+};
 const setSchema = {
   type: "OBJECT",
   properties: {
     topic: { type: "STRING", description: "The main topic of this part of the material, 2–5 words." },
     questions: { type: "ARRAY", items: questionSchema },
     flashcards: { type: "ARRAY", items: flashcardSchema },
+    theory: { type: "ARRAY", items: theorySchema, description: "Essay/theory questions with a marking guide." },
   },
   required: ["topic", "questions", "flashcards"],
 };
@@ -60,11 +76,20 @@ const zQuestion = z.object({
   difficulty: z.enum(DIFFICULTIES).catch("medium"),
 });
 const zFlashcard = z.object({ front: z.string().min(1), back: z.string().min(1), topic: z.string().nullish() });
+const zRubric = z.array(z.object({ point: z.string().min(2), marks: z.number().int().min(1).max(10) })).min(1).max(10);
+const zTheory = z.object({ question: z.string().min(10), topic: z.string().nullish(), rubric: zRubric, modelAnswer: z.string().default("") });
 const zSet = z.object({
   topic: z.string().default(""),
   questions: z.array(zQuestion).max(60).default([]),
   flashcards: z.array(zFlashcard).max(60).default([]),
+  // One bad theory item shouldn't sink the batch: keep the valid ones.
+  theory: z
+    .array(z.unknown())
+    .max(5)
+    .default([])
+    .transform((items) => items.flatMap((t) => (zTheory.safeParse(t).success ? [zTheory.parse(t)] : []))),
 });
+export type GeneratedTheory = z.infer<typeof zTheory>;
 
 export type GeneratedQuestion = z.infer<typeof zQuestion>;
 export type GeneratedFlashcard = z.infer<typeof zFlashcard>;
@@ -77,6 +102,8 @@ export type GenerateInput = {
   label: string;
   questionCount: number;
   flashcardCount: number;
+  /** Theory questions with a marking guide (rubric generated once and stored). */
+  theoryCount?: number;
   knownTopics: string[];
 };
 
@@ -106,6 +133,7 @@ export async function generateQuestions(ai: AiProvider, input: GenerateInput): P
         text: `${courseLine(input.course)}
 From the student's notes below (${input.label}), ${asks}
 - Flashcards: a question or key term on the front, a short answer on the back.
+- ${input.theoryCount ? `Also write ${input.theoryCount} theory (essay) question${input.theoryCount === 1 ? "" : "s"} like a Nigerian university exam ("Explain…", "Discuss…, with examples"), each with a marking guide of 3–5 key points (marks per point, 6–10 in total) and a model answer from the notes.` : "No theory questions."}
 - "topic": the main topic of this part of the notes. ${topicHint(input.knownTopics)}
 
 Notes:
@@ -119,7 +147,7 @@ ${input.text.slice(0, MAX_CHUNK_CHARS)}
     temperature: 0.6,
     context: input,
   });
-  return { ...reply, questions: reply.questions.slice(0, n), flashcards: reply.flashcards.slice(0, Math.max(m, 0)) };
+  return { ...reply, questions: reply.questions.slice(0, n), flashcards: reply.flashcards.slice(0, Math.max(m, 0)), theory: reply.theory.slice(0, input.theoryCount ?? 0) };
 }
 
 export type PastPaperInput = { course: CourseRef; text: string; label: string; max: number; knownTopics: string[] };
@@ -221,20 +249,35 @@ Return one entry in "pages" per photo, in the same order. If a photo is unreadab
 const zAnswer = z.object({ answer: z.string().min(1), citedChunkIds: z.array(z.string()).default([]), notInNotes: z.boolean().default(false) });
 export type TutorChunk = { id: string; label: string; text: string };
 
-/** Answers only from the given chunks (top 5 by retrieval), citing them. */
-export async function answerFromNotes(ai: AiProvider, input: { course: CourseRef; question: string; chunks: TutorChunk[] }) {
+export type TutorInput = {
+  course: CourseRef;
+  question: string;
+  /** Top passages from retrieval (page-level), ids are what the reply must cite. */
+  chunks: TutorChunk[];
+  /** The last exchange, for follow-ups and the quick actions. */
+  previous?: { question: string; answer: string } | null;
+  /** Quick action: "Explain simpler", "Give an example", "Quiz me on this". */
+  instruction?: string | null;
+};
+
+/** Answers only from the given passages (top 5 by retrieval), citing them by id. */
+export async function answerFromNotes(ai: AiProvider, input: TutorInput) {
   return ai.generate({
     task: "answer_from_notes",
-    system: `${RULES}\nYou are a patient tutor. Answer only from the excerpts given. If they don't cover it, say so and set notInNotes.`,
+    system: `${RULES}
+You are a patient tutor for one course. Answer ONLY from the excerpts of the student's notes given below.
+- If the excerpts don't contain the answer, say plainly that their notes don't cover it and set notInNotes to true. Never fill gaps from general knowledge.
+- Cite the ids of every excerpt you used in citedChunkIds.
+- Decline to help answer an exam or test the student is sitting right now.`,
     parts: [
       {
         text: `${courseLine(input.course)}
 Excerpts from the student's notes:
 ${input.chunks.map((c) => `[${c.id}] (${c.label})\n${c.text.slice(0, 2500)}`).join("\n\n")}
+${input.previous ? `\nPrevious question: ${input.previous.question.slice(0, 500)}\nYour previous answer: ${input.previous.answer.slice(0, 1200)}\n` : ""}
+${input.instruction ? `Task: ${input.instruction}` : `Question: ${input.question.slice(0, 1000)}`}
 
-Question: ${input.question.slice(0, 1000)}
-
-Answer in under 150 words. List the ids of the excerpts you used in citedChunkIds.`,
+Answer in under 150 words, in plain sentences (short lists are fine).`,
       },
     ],
     schema: {
@@ -243,6 +286,29 @@ Answer in under 150 words. List the ids of the excerpts you used in citedChunkId
       required: ["answer", "citedChunkIds", "notInNotes"],
     },
     parse: zAnswer,
+    temperature: 0.2,
+    context: input,
+  });
+}
+
+const zRubricReply = z.object({ rubric: zRubric, modelAnswer: z.string().default("") });
+
+/** A marking guide for a theory question that doesn't have one (made once, then stored). */
+export async function generateRubric(ai: AiProvider, input: { course: CourseRef; question: string; marks: number; notes: string | null }) {
+  return ai.generate({
+    task: "rubric",
+    system: RULES,
+    parts: [
+      {
+        text: `${courseLine(input.course)}
+Write the marking guide a fair Nigerian lecturer would use for this theory question (${input.marks} marks in total): 3–5 key points, each with its marks, adding up to ${input.marks}. Then a model answer.
+${input.notes ? `Base it on these notes:\n"""\n${input.notes.slice(0, 6000)}\n"""` : ""}
+
+Question: ${input.question}`,
+      },
+    ],
+    schema: { type: "OBJECT", properties: { rubric: rubricSchema, modelAnswer: { type: "STRING" } }, required: ["rubric", "modelAnswer"] },
+    parse: zRubricReply,
     temperature: 0.2,
     context: input,
   });

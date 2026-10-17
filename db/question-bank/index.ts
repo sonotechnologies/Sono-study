@@ -7,6 +7,7 @@ import { GST111 } from "./gst111";
 import { MAC111 } from "./mac111";
 import { MTH101 } from "./mth101";
 import { PHY101 } from "./phy101";
+import { THEORY } from "./theory";
 import type { BankQuestion } from "./types";
 
 /** Course code → sample questions. 5 courses × 60 = 300 (brief: seed data doubles as the portfolio demo). */
@@ -96,5 +97,23 @@ export async function ensureQuestionBank(db: Db) {
         visibility: "shared" as const,
       }));
     if (cards.length) await db.insert(flashcards).values(cards);
+    // Sample theory questions with their marking guides.
+    const theory = THEORY[course.code] ?? [];
+    if (theory.length) {
+      await db.insert(questions).values(
+        theory.map((t) => ({
+          courseId: course.id,
+          topicId: topicId.get(t.topic)!,
+          type: "theory" as const,
+          stem: t.stem,
+          options: [],
+          answer: { kind: "theory" as const, modelAnswer: t.modelAnswer },
+          rubric: t.rubric,
+          difficulty: 2,
+          visibility: "shared" as const,
+          sourceLabel: `${label} sample theory`,
+        })),
+      );
+    }
   }
 }

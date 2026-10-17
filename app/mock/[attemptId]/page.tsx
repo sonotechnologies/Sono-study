@@ -49,7 +49,7 @@ export default async function MockPage({ params }: { params: Promise<{ attemptId
     );
     const topicNames = [...new Set(a.snapshot.map((q) => q.topicName).filter(Boolean))];
     const label = topicNames.length === 1 ? topicNames[0]! : topicNames.length <= 3 ? topicNames.join(", ") : "Mixed topics";
-    return <PracticeRuntime payload={{ ...payload, exitUrl: "/courses" }} topicLabel={label} initial={initial} />;
+    return <PracticeRuntime payload={{ ...payload, exitUrl: `/courses/${a.courseId}` }} topicLabel={label} initial={initial} tutorHref={`/tutor/${a.courseId}`} />;
   }
   return <ExamRuntime payload={payload} />;
 }

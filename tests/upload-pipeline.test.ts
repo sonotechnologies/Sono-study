@@ -73,8 +73,11 @@ describe("upload pipeline (offline provider)", () => {
     expect(view?.topics.map((t) => t.name)).toContain("Barriers to communication");
     expect(view?.xpEarned).toBe(60);
 
-    const qs = await db.select().from(questions).where(eq(questions.sourceUploadId, prep.uploadId));
+    const all = await db.select().from(questions).where(eq(questions.sourceUploadId, prep.uploadId));
+    const qs = all.filter((q) => q.type !== "theory");
     expect(qs.length).toBe(view?.questionsMade);
+    // One theory question per chunk, with its marking guide.
+    expect(all.filter((q) => q.type === "theory" && q.rubric?.length).length).toBe(view?.chunksTotal);
     expect(qs.every((q) => q.visibility === "shared" && q.explanation && q.sourceLabel?.startsWith("GST111 week 3 notes · p."))).toBe(true);
     const [{ n: cards }] = await db.select({ n: count() }).from(flashcards).where(eq(flashcards.sourceUploadId, prep.uploadId));
     expect(Number(cards)).toBe(view?.flashcardsMade);

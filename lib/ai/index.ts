@@ -143,5 +143,6 @@ export const ai = {
   readImage: (db: Db, input: Parameters<typeof tasks.readImage>[1]) => withAi(db, "vision", (p) => tasks.readImage(p, input)),
   answerFromNotes: (db: Db, input: Parameters<typeof tasks.answerFromNotes>[1]) => withAi(db, "text", (p) => tasks.answerFromNotes(p, input)),
   gradeTheory: (db: Db, input: Parameters<typeof tasks.gradeTheory>[1]) => withAi(db, "text", (p) => tasks.gradeTheory(p, input)),
+  generateRubric: (db: Db, input: Parameters<typeof tasks.generateRubric>[1]) => withAi(db, "text", (p) => tasks.generateRubric(p, input)),
   embed: (db: Db, texts: string[], kind: EmbedKind = "document") => withAi(db, "embed", (p) => p.embed!(texts, kind)),
 };
