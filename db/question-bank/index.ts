@@ -78,6 +78,7 @@ export async function ensureQuestionBank(db: Db) {
       title: `${label} sample paper`,
       questionIds: inserted.filter((_, i) => i % 2 === 0).map((r) => r.id),
       isShared: true,
+      verified: true,
     });
   }
 }

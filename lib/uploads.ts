@@ -3,6 +3,7 @@ import { and, asc, count, desc, eq, inArray, isNull, ne, sql } from "drizzle-orm
 import type { Db } from "@/db";
 import { aiJobs, chunks, courses, enrollments, flashcards, questions, topics, uploads, users } from "@/db/schema";
 import { toRow } from "@/db/question-bank";
+import { ensureUploadBank } from "@/lib/banks";
 import { ai, aiConfigured, AiError, nextProviderAt } from "@/lib/ai";
 import { looksLikePastPaper, toBankQuestion, type GeneratedSet, type Photo } from "@/lib/ai/tasks";
 import { effectivePlan } from "@/lib/billing";
@@ -242,6 +243,7 @@ export async function reuseInto(db: Db, target: Upload, source: Upload, now = ne
       completedAt: now,
     })
     .where(eq(uploads.id, target.id));
+  if (!linksToSource(target, source)) await ensureUploadBank(db, target.id);
 }
 
 /** Finds or creates the course topic a generated topic name belongs to (merging near-duplicates). */
@@ -496,6 +498,7 @@ async function chunkFinished(db: Db, uploadId: string, madeQ: number, madeF: num
     .returning({ id: uploads.id });
   if (!done.length) return;
   await db.update(users).set({ xp: sql`${users.xp} + ${UPLOAD_XP}` }).where(eq(users.id, u.userId));
+  await ensureUploadBank(db, u.id);
   await enqueue(db, "embed_upload", { uploadId: u.id }, { userId: u.userId, priority: -10 });
 }
 

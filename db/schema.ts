@@ -29,7 +29,9 @@ export const uploadStatus = pgEnum("upload_status", ["queued", "extracting", "ge
 export const visibility = pgEnum("visibility", ["private", "shared"]);
 export const uploadVisibility = pgEnum("upload_visibility", ["private", "contribute"]);
 export const questionType = pgEnum("question_type", ["single", "multiple", "true_false", "fill_in", "theory"]);
-export const questionStatus = pgEnum("question_status", ["active", "hidden"]);
+/** hidden = removed by its author; reported = auto-hidden after 3 reports, pending admin review. */
+export const questionStatus = pgEnum("question_status", ["active", "hidden", "reported"]);
+export const reportReason = pgEnum("report_reason", ["wrong_answer", "off_topic", "copied", "inappropriate"]);
 export const attemptMode = pgEnum("attempt_mode", ["mock", "practice", "challenge"]);
 export const attemptStatus = pgEnum("attempt_status", ["in_progress", "submitted", "auto_submitted"]);
 export const tutorRole = pgEnum("tutor_role", ["user", "assistant"]);
@@ -269,19 +271,82 @@ export const questions = pgTable(
   (t) => [index("questions_course_topic_idx").on(t.courseId, t.topicId)],
 );
 
-export const banks = pgTable("banks", {
-  id: id(),
-  courseId: text("course_id")
-    .notNull()
-    .references(() => courses.id, { onDelete: "cascade" }),
-  ownerId: text("owner_id").references(() => users.id, { onDelete: "set null" }),
-  title: text("title").notNull(),
-  questionIds: text("question_ids").array().notNull().default(sql`'{}'::text[]`),
-  isShared: boolean("is_shared").notNull().default(true),
-  attempts: integer("attempts").notNull().default(0),
-  rating: real("rating"),
-  createdAt: createdAt(),
-});
+export const banks = pgTable(
+  "banks",
+  {
+    id: id(),
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    ownerId: text("owner_id").references(() => users.id, { onDelete: "set null" }),
+    /** The upload this bank was made from (one bank per upload). */
+    uploadId: text("upload_id").references(() => uploads.id, { onDelete: "set null" }),
+    title: text("title").notNull(),
+    questionIds: text("question_ids").array().notNull().default(sql`'{}'::text[]`),
+    isShared: boolean("is_shared").notNull().default(true),
+    /** Curated (seeded or checked by an admin): shows the "Verified" tag. */
+    verified: boolean("verified").notNull().default(false),
+    attempts: integer("attempts").notNull().default(0),
+    /** Average of bank_ratings (1–5), null until rated. */
+    rating: real("rating"),
+    ratingCount: integer("rating_count").notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (t) => [index("banks_course_idx").on(t.courseId), uniqueIndex("banks_upload_idx").on(t.uploadId)],
+);
+
+/** "Shared bank ratings" (brief §10): one 1–5 rating per student per bank, after taking it. */
+export const bankRatings = pgTable(
+  "bank_ratings",
+  {
+    bankId: text("bank_id")
+      .notNull()
+      .references(() => banks.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    stars: integer("stars").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.bankId, t.userId] })],
+);
+
+/** "Report question" (brief: content safety). One report per student per question; 3 auto-hide it. */
+export const questionReports = pgTable(
+  "question_reports",
+  {
+    id: id(),
+    questionId: text("question_id")
+      .notNull()
+      .references(() => questions.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    reason: reportReason("reason").notNull(),
+    note: text("note"),
+    createdAt: createdAt(),
+    resolvedAt: ts("resolved_at"),
+    /** restored | removed | edited */
+    resolution: text("resolution"),
+  },
+  (t) => [uniqueIndex("question_reports_user_idx").on(t.questionId, t.userId), index("question_reports_open_idx").on(t.resolvedAt)],
+);
+
+/** Readiness per course per Lagos day, so "+6% this week" compares like with like. */
+export const readinessSnapshots = pgTable(
+  "readiness_snapshots",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    date: date("date").notNull(),
+    score: real("score").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.courseId, t.date] })],
+);
 
 // ── Exam engine ──────────────────────────────────────────────────────────────
 
