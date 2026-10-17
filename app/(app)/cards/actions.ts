@@ -22,7 +22,7 @@ export async function sessionSummaryAction(courseId: string, sinceIso: string): 
   const viewer = await requireViewer();
   const since = new Date(sinceIso);
   const summary = await sessionSummary(await getDb(), viewer.id, courseId, Number.isNaN(since.getTime()) ? new Date() : since);
-  revalidatePath("/home");
+  // No revalidatePath here: it would re-render the session page with an empty queue and wipe the summary.
   // The viewer row may have been read before the reviews: read the streak again.
   const [u] = await (await getDb()).select({ streakDays: users.streakDays }).from(users).where(eq(users.id, viewer.id));
   return { ...summary, streakDays: u?.streakDays ?? viewer.streakDays };

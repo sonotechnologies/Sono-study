@@ -16,14 +16,16 @@ const B = "http://localhost:3200";
 const env = { ...process.env, ALLOW_DEMO: "1", ALLOW_EMBEDDED_DB: "1", PGLITE_DIR: path.join(S, "db"), PORT: "3200" };
 let server;
 async function up() {
-  server = spawn("node_modules/.bin/next", ["start", "-p", "3200"], { cwd: process.cwd(), env, stdio: "ignore" });
+  server = spawn("node_modules/.bin/next", ["start", "-p", "3200"], { cwd: process.cwd(), env, stdio: "ignore", detached: true });
   for (let i = 0; i < 120; i++) { try { if ((await fetch(B + "/offline")).ok) return; } catch {} await new Promise((r) => setTimeout(r, 500)); }
   throw new Error("server did not start");
 }
 async function down() {
-  server.kill("SIGKILL");
+  // Own process group: kill it whole, or next-server outlives its parent.
+  try { process.kill(-server.pid, "SIGKILL"); } catch {}
   for (let i = 0; i < 40; i++) { try { await fetch(B + "/offline"); await new Promise((r) => setTimeout(r, 250)); } catch { return; } }
 }
+process.on("exit", () => { try { process.kill(-server.pid, "SIGKILL"); } catch {} });
 const log = (...a) => console.log("✓", ...a);
 const fail = (m) => { console.log("✗", m); process.exitCode = 1; };
 

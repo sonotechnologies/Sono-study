@@ -32,6 +32,13 @@ const env = {
   PORT: String(PORT),
 };
 let server!: ChildProcess;
+/** The server runs in its own process group: kill the group, or next-server outlives its parent. */
+function killServer() {
+  try {
+    process.kill(-server.pid!, "SIGKILL");
+  } catch {}
+}
+process.on("exit", killServer);
 const log = (...a: unknown[]) => console.log("✓", ...a);
 const fail = (m: string) => {
   console.log("✗", m);
@@ -39,7 +46,7 @@ const fail = (m: string) => {
 };
 
 async function up() {
-  server = spawn("node_modules/.bin/next", ["start", "-p", String(PORT)], { cwd: process.cwd(), env, stdio: "ignore" });
+  server = spawn("node_modules/.bin/next", ["start", "-p", String(PORT)], { cwd: process.cwd(), env, stdio: "ignore", detached: true });
   for (let i = 0; i < 120; i++) {
     try {
       if ((await fetch(B + "/offline")).ok) return;
@@ -96,7 +103,7 @@ if (second.questions === first.questions && /Ready instantly/.test(second.text) 
 await second.ctx.close();
 await browser.close();
 
-server.kill("SIGKILL");
+killServer();
 await new Promise((r) => setTimeout(r, 1500));
 
 // 3. Provider failover, read from the database the server used

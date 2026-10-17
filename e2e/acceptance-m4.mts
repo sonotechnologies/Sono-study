@@ -30,13 +30,20 @@ const env = {
   AI_PROVIDERS: "fake",
   PORT: String(PORT),
 };
+/** The server runs in its own process group: kill the group, or next-server outlives its parent. */
+function killServer() {
+  try {
+    process.kill(-server.pid!, "SIGKILL");
+  } catch {}
+}
+process.on("exit", killServer);
 const log = (...a: unknown[]) => console.log("✓", ...a);
 const fail = (m: string) => {
   console.log("✗", m);
   process.exitCode = 1;
 };
 
-const server: ChildProcess = spawn("node_modules/.bin/next", ["start", "-p", String(PORT)], { cwd: process.cwd(), env, stdio: "ignore" });
+const server: ChildProcess = spawn("node_modules/.bin/next", ["start", "-p", String(PORT)], { cwd: process.cwd(), env, stdio: "ignore", detached: true });
 for (let i = 0; i < 120; i++) {
   try {
     if ((await fetch(B + "/offline")).ok) break;
@@ -109,4 +116,4 @@ else fail("bank still visible after sharing was turned off");
 if (errors.length) fail(`page errors: ${errors.join(" | ")}`);
 else log("no page errors");
 await browser.close();
-server.kill("SIGKILL");
+killServer();

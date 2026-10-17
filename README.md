@@ -25,6 +25,7 @@ npm test           # unit + database tests (PGlite, no server needed)
 npm run build && npm run e2e:m2   # Milestone 2 acceptance in a real browser
 npm run build && npm run e2e:m3   # Milestone 3 acceptance (upload → questions, reuse, provider failover)
 npm run build && npm run e2e:m4   # Milestone 4 acceptance (a classmate sees and practises shared questions)
+npm run build && npm run e2e:m5   # Milestone 5 acceptance (tutor cites the right page, refuses to invent)
 npm run typecheck
 npm run lint
 ```
@@ -154,6 +155,33 @@ The engine in `lib/exam-engine` is ported from SonoCBT's exam runtime: `lib/exam
   - When Ada turns sharing off, the bank disappears for Bisi.
   - `tests/shared-banks.test.ts` covers the same at service level, plus another school's GST 111 never seeing it, reporting, ratings, readiness and the plan.
 
+**Milestone 5 — Flashcards, tutor, theory grading** ✅ (designs 2j–2o)
+- **Flashcards (`lib/flashcards.ts`, `/cards`):**
+  - **Scheduling:** SM-2 with the design's four buttons. New cards go Again <1 min, Hard 6 min, Good 1 day, Easy 4 days. Learned cards grow by their ease (min 1.3), and a lapse resets them to under a minute.
+  - **Due queue:** reviews first, plus 20 new cards a day; cards a student wrote come first. Due counts show on Home, the course page and the cards list.
+  - **Review session (2j–2l):** a 3D flip (a crossfade with reduced motion), Space to flip, 1–4 to rate. The summary shows the rating spread, XP (3 per card), next due, and "Practise the N Again cards".
+  - **Your own cards:** students write their own (private) cards and edit cards from their uploads.
+  - **In the plan:** "Review N flashcards" heads the day's plan on every plan; reviews keep the streak.
+  - **Sample cards:** 20 per seeded course.
+- **Tutor (`lib/tutor.ts`, `/tutor/[courseId]`, 2m–2n):**
+  - **What it reads:** the student's own notes plus classmates' contributed notes for the course, nothing else.
+  - **Retrieval:** the 8 nearest chunks by pgvector cosine distance (word overlap when there are no embeddings), split back into pages, re-ranked by overlap with the question. The top 5 passages go to the AI.
+  - **Citations:** every answer cites its passages, e.g. "Week 3 slides · p.3". Chips for the student's own notes open their file at that page; classmates' show "Classmate's notes · p.N" with no link, since files stay private.
+  - **Refuses to invent:** if the notes don't cover the question, or the AI cites nothing it was given, the reply is "Your GST 111 notes don't cover that, so I won't guess."
+  - **No exam help:** it declines while a timed mock is running or when asked for help mid-exam.
+  - **Quick actions:** Quiz me on this / Explain simpler / Give an example.
+  - **Daily cap:** 10 messages (Pro 100).
+- **Theory grading (`lib/theory.ts`, `/courses/[id]/theory`, `/theory/[id]`, 2o):**
+  - **Where questions come from:** uploads add one theory question per chunk with a marking guide (key points and marks) and a model answer. Seeded courses have two each.
+  - **Rubrics:** a theory question without a guide gets one made on first grading, stored for next time.
+  - **Grading:** the result shows the score out of max, a verdict, points covered and missed, and one tip with the source, labelled "AI guidance against a marking guide, not an official grade".
+  - **The rest:** Rewrite answer, Next question, a model answer, drafts kept on the phone. Daily cap: 3 (Pro 30).
+- **Acceptance, checked in a real browser against a production build:** `npm run build && npm run e2e:m5`.
+  - **Right page:** the tutor answers "What are the four stages of listening?" citing **Week 3 slides · p.3**, and that chip opens the PDF at page 3.
+  - **No inventing:** asked something the notes don't contain, it says so with no citation.
+  - **Also covered:** a 20-card flashcard session reaches its summary, and a theory answer is marked against its guide.
+  - **Service-level tests:** in `tests/tutor.test.ts`, `tests/flashcards.test.ts` and `tests/theory.test.ts`. They also cover an AI reply that cites nothing being refused, classmates' notes, exam-in-progress refusals and the daily caps.
+
 **Setting up AI and storage**
 1. **Gemini (required for real questions):** get a free key at aistudio.google.com and set `GEMINI_API_KEY`. `GEMINI_MODEL` takes a comma-separated fallback list. Check the current free-tier models and limits when you set it up, because they change often. `GEMINI_EMBED_MODEL` defaults to `gemini-embedding-001`.
 2. **Groq (optional fallback):** a free key from console.groq.com in `GROQ_API_KEY`. `GROQ_MODEL` is optional.
@@ -191,7 +219,7 @@ The build brief is the source of truth for product rules:
 ## Next milestones
 
 The brief's build order from here:
-- **Milestone 5:** flashcards (SM-2 reviews, so the Flashcards tiles get a due count), the tutor with citations, and theory grading.
+- **Milestone 6:** social and monetisation. Most of it was built early: leaderboards, challenges, share cards, streaks, daily limits, Paystack passes and referrals. What's left is the acceptance run: a free user hits the daily question limit, buys a ₦500 Week Pass in Paystack test mode, and the limits lift immediately. That needs a Paystack test key.
 
 The Account and social screens in Milestone 6 were built early, from the designs. Landing page 4a comes with the marketing work.
 
@@ -199,3 +227,4 @@ The Account and social screens in Milestone 6 were built early, from the designs
 - `/courses/<id>/mock?quick=1` adds a 1-minute timer for trying auto-submit.
 - `/dev/new-student?ready=1&next=/upload` signs you in as a fresh classmate of the demo student, with a full upload allowance.
 - `FAKE_AI_DELAY_MS=3000 npm run dev` slows the offline provider so you can watch the progress screen.
+- The local database seeds sample flashcards and theory questions only on a fresh start: run `npm run db:reset-local` once after pulling this milestone.
