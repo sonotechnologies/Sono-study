@@ -11,7 +11,9 @@ export type AnswerKey =
   | { kind: "single"; correct: string }
   | { kind: "multiple"; correct: string[]; scoring: "all_or_nothing" | "partial" }
   | { kind: "true_false"; correct: boolean }
-  | { kind: "fill_in"; accepted: string[]; caseSensitive: boolean };
+  | { kind: "fill_in"; accepted: string[]; caseSensitive: boolean }
+  /** Theory/essay: graded against questions.rubric, never in mocks. */
+  | { kind: "theory"; modelAnswer: string };
 
 export type QuestionOption = { id: string; text: string };
 

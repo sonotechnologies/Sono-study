@@ -103,7 +103,7 @@ export async function todayActivity(db: Db, userId: string, courseId: string, no
 
 export type PlanItem = {
   id: string;
-  kind: "practice" | "new_topic" | "mock" | "upload";
+  kind: "practice" | "new_topic" | "mock" | "upload" | "cards";
   label: string;
   topicId?: string;
   topicName?: string;
@@ -137,6 +137,8 @@ export function dailyPlan(input: {
   examDate: string | null;
   tier: "basic" | "full";
   activity: TodayActivity;
+  /** Flashcards due now and already reviewed today (cards are free on every plan, so they're always in it). */
+  cards?: { due: number; reviewedToday: number };
   now?: Date;
 }): DailyPlan {
   const now = input.now ?? new Date();
@@ -178,7 +180,13 @@ export function dailyPlan(input: {
   const fresh = untried.find((t) => !all.some((i) => i.topicId === t.id));
   if (fresh) all.push(practice(fresh, "new_topic", 10));
 
-  const items = input.tier === "full" ? all.slice(0, 4) : all.slice(0, 2);
+  let items = input.tier === "full" ? all.slice(0, 4) : all.slice(0, 2);
+  const c = input.cards;
+  if (c && c.due + c.reviewedToday > 0) {
+    const target = Math.min(30, c.due + c.reviewedToday);
+    const done = c.reviewedToday >= target || c.due === 0;
+    items = [{ id: "cards", kind: "cards", label: `Review ${target} flashcards`, count: target, done, progress: Math.min(1, c.reviewedToday / target) }, ...items];
+  }
   const week: DailyPlan["week"] = [];
   if (input.tier === "full" && daysLeft !== null && daysLeft > 0) {
     const rotation = [...weak, ...untried];

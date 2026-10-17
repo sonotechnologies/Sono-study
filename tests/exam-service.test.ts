@@ -42,7 +42,7 @@ function respond(q: QuestionSnapshot, right: boolean): AttemptResponse {
   if (a.kind === "single") return { kind: "choice", optionIds: [right ? a.correct : q.options.find((o) => o.id !== a.correct)!.id] };
   if (a.kind === "multiple") return { kind: "choice", optionIds: right ? a.correct : [q.options.find((o) => !a.correct.includes(o.id))!.id] };
   if (a.kind === "true_false") return { kind: "bool", value: right ? a.correct : !a.correct };
-  return { kind: "text", text: right ? a.accepted[0] : "definitely wrong" };
+  return { kind: "text", text: right && a.kind === "fill_in" ? a.accepted[0] : "definitely wrong" };
 }
 
 async function fresh(id: string) {

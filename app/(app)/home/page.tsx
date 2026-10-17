@@ -8,7 +8,7 @@ import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { buttonClass, ButtonLink, Card, Pill } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
 import { courseSnapshot } from "@/lib/course-dashboard";
-import { courseFlashcardCount, courseTopics } from "@/lib/course-data";
+import { courseTopics } from "@/lib/course-data";
 import { inProgressAttempt } from "@/lib/exam-engine/service";
 import { displayCourseCode, formatClock } from "@/lib/format";
 import { getCourseBoard } from "@/lib/leaderboard";
@@ -52,7 +52,7 @@ export default async function HomePage() {
   const upcoming = viewer.courses.filter((c) => c.examDate && daysUntilExam(c.examDate, at) >= 0);
   const focus = upcoming[0] ?? viewer.courses[0];
 
-  const [snap, running, [latest], others, cards, board] = await Promise.all([
+  const [snap, running, [latest], others, board] = await Promise.all([
     focus ? courseSnapshot(db, viewer, focus, at) : null,
     inProgressAttempt(db, viewer.id),
     recentUploads(db, viewer.id, 1),
@@ -62,7 +62,6 @@ export default async function HomePage() {
         return { ...c, score, label: score === null ? null : readinessLabel(score) };
       }),
     ),
-    focus ? courseFlashcardCount(db, viewer.id, focus.id) : 0,
     focus ? getCourseBoard(db, { courseId: focus.id, scope: "week", viewer, limit: 1 }) : null,
   ]);
   const runningCourse = running ? viewer.courses.find((c) => c.id === running.courseId) : null;
@@ -155,9 +154,9 @@ export default async function HomePage() {
           </section>
           <div className="flex flex-col gap-4">
             <div className="flex gap-2">
-              <Link href="/cards" className="flex flex-1 items-center justify-between rounded-[12px] border border-border bg-surface p-3 hover:border-accent">
-                <span className="text-sm">Flashcards</span>
-                <span className="font-display font-bold">{cards}</span>
+              <Link href={`/cards/${focus.id}`} className="flex flex-1 items-center justify-between rounded-[12px] border border-border bg-surface p-3 hover:border-accent">
+                <span className="text-sm">Cards due</span>
+                <span className="font-display font-bold">{snap.cards.total}</span>
               </Link>
               <a href="#plan" className="flex flex-1 items-center justify-between rounded-[12px] border border-border bg-surface p-3 hover:border-accent">
                 <span className="text-sm">Plan</span>

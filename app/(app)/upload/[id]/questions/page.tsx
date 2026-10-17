@@ -29,6 +29,8 @@ function answerText(answer: AnswerKey, options: QuestionOption[]): string {
       return answer.correct ? "True" : "False";
     case "fill_in":
       return answer.accepted.join(" / ");
+    case "theory":
+      return answer.modelAnswer;
   }
 }
 

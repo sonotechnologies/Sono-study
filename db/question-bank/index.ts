@@ -1,6 +1,6 @@
 import { count, eq, inArray } from "drizzle-orm";
 import type { Db } from "../index";
-import { banks, courses, questions, topics } from "../schema";
+import { banks, courses, flashcards, questions, topics } from "../schema";
 import type { AnswerKey } from "../../lib/exam-engine/types";
 import { CHM101 } from "./chm101";
 import { GST111 } from "./gst111";
@@ -80,5 +80,21 @@ export async function ensureQuestionBank(db: Db) {
       isShared: true,
       verified: true,
     });
+    // Sample flashcards: the first 20 one-answer and fill-in questions as question → answer.
+    const cards = bank
+      .map((q, i) => ({ q, id: inserted[i].id }))
+      .flatMap(({ q }): { q: BankQuestion; answer: string }[] =>
+        q.t === "single" ? [{ q, answer: q.options[q.correct] }] : q.t === "fill_in" ? [{ q, answer: q.accepted[0] }] : [],
+      )
+      .slice(0, 20)
+      .map(({ q, answer }) => ({
+        courseId: course.id,
+        topicId: topicId.get(q.topic)!,
+        front: q.stem,
+        back: `${answer}. ${q.why}`,
+        sourceLabel: `${label} sample cards`,
+        visibility: "shared" as const,
+      }));
+    if (cards.length) await db.insert(flashcards).values(cards);
   }
 }

@@ -12,7 +12,6 @@ import { buttonClass, ButtonLink } from "@/components/ui/primitives";
 import { bankSubtitle, classBank, courseBanksView } from "@/lib/banks";
 import { cn } from "@/lib/cn";
 import { courseSnapshot } from "@/lib/course-dashboard";
-import { courseFlashcardCount } from "@/lib/course-data";
 import { formatScore } from "@/lib/exam-engine/results";
 import { displayCourseCode, timeAgo } from "@/lib/format";
 import { getCourseBoard } from "@/lib/leaderboard";
@@ -45,12 +44,11 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
   if (!course) notFound();
   const db = await getDb();
   const at = now();
-  const [snap, banks, cls, uploads, cards, board, [enrollment]] = await Promise.all([
+  const [snap, banks, cls, uploads, board, [enrollment]] = await Promise.all([
     courseSnapshot(db, viewer, course, at),
     courseBanksView(db, viewer.id, courseId),
     classBank(db, courseId),
     recentUploads(db, viewer.id, 6, courseId),
-    courseFlashcardCount(db, viewer.id, courseId),
     getCourseBoard(db, { courseId, scope: "week", viewer, limit: 2 }),
     db.select({ examTime: enrollments.examTime }).from(enrollments).where(and(eq(enrollments.userId, viewer.id), eq(enrollments.courseId, courseId))),
   ]);
@@ -124,12 +122,12 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
           </section>
 
           <div className="grid grid-cols-2 gap-2.5">
-            <Link href="/cards" className="flex flex-col gap-1 rounded-2xl border border-border bg-surface p-3.5 hover:border-accent">
-              <span className="text-[13px] text-ink-muted">Flashcards</span>
-              <span className="font-display text-[28px] font-bold leading-tight">{cards}</span>
-              <span className="text-[13px] font-semibold text-accent">Review now</span>
+            <Link href={`/cards/${courseId}`} className="flex flex-col gap-1 rounded-2xl border border-border bg-surface p-3.5 hover:border-accent">
+              <span className="text-[13px] text-ink-muted">Flashcards due</span>
+              <span className="font-display text-[28px] font-bold leading-tight">{snap.cards.total}</span>
+              <span className="text-[13px] font-semibold text-accent">{snap.cards.total ? "Review now" : "Add a card"}</span>
             </Link>
-            <Link href="/tutor" className="flex flex-col gap-1 rounded-2xl bg-accent-soft p-3.5">
+            <Link href={`/tutor/${courseId}`} className="flex flex-col gap-1 rounded-2xl bg-accent-soft p-3.5">
               <span className="text-[13px] text-ink-muted">Tutor</span>
               <span className="text-[15px] font-semibold leading-snug">Ask anything from your {code} notes</span>
               <span className="text-[13px] font-semibold text-accent">Open chat</span>

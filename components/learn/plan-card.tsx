@@ -15,6 +15,13 @@ function StartLink({ item, courseId }: { item: PlanItem; courseId: string }) {
       </Link>
     );
   }
+  if (item.kind === "cards") {
+    return (
+      <Link href={`/cards/${courseId}`} className={cls}>
+        Start
+      </Link>
+    );
+  }
   if (item.kind === "upload") {
     return (
       <Link href={`/upload?course=${courseId}`} className={cls}>
@@ -72,7 +79,7 @@ export function PlanCard({
               <span className={cn("flex-1 text-[15px]", item.done && "text-ink-muted line-through")}>
                 {item.label}
                 <span className="sr-only">{item.done ? " (done)" : ""}</span>
-                {!item.done && item.progress > 0 && item.kind !== "mock" && (
+                {!item.done && item.progress > 0 && item.kind !== "mock" && item.kind !== "cards" && (
                   <span className="text-[13px] text-ink-muted"> · {Math.round(item.progress * item.count)} so far</span>
                 )}
               </span>

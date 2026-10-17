@@ -455,9 +455,35 @@ export const flashcards = pgTable("flashcards", {
   back: text("back").notNull(),
   sourceUploadId: text("source_upload_id").references(() => uploads.id, { onDelete: "set null" }),
   sourceLabel: text("source_label"),
+  /** Student who typed it in ("students can add or edit"); null for generated cards. */
+  createdById: text("created_by_id").references(() => users.id, { onDelete: "set null" }),
   visibility: visibility("visibility").notNull().default("shared"),
   createdAt: createdAt(),
 });
+
+export type CardRating = "again" | "hard" | "good" | "easy";
+
+/** Every flashcard review, for the session summary, XP, streaks and the day's plan. */
+export const cardReviewLog = pgTable(
+  "card_review_log",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    flashcardId: text("flashcard_id")
+      .notNull()
+      .references(() => flashcards.id, { onDelete: "cascade" }),
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    rating: text("rating").$type<CardRating>().notNull(),
+    reviewedAt: ts("reviewed_at").notNull().defaultNow(),
+  },
+  (t) => [index("card_review_log_user_idx").on(t.userId, t.reviewedAt)],
+);
+
+export type TutorCitation = { id: string; label: string; uploadId: string; page: number | null; own: boolean };
 
 export const cardReviews = pgTable(
   "card_reviews",
@@ -487,6 +513,8 @@ export const tutorMessages = pgTable("tutor_messages", {
   role: tutorRole("role").notNull(),
   content: text("content").notNull(),
   citedChunkIds: text("cited_chunk_ids").array().notNull().default(sql`'{}'::text[]`),
+  /** What the citation chips show ("Week 3 slides · p.12"), kept with the message. */
+  citations: jsonb("citations").$type<TutorCitation[]>().notNull().default([]),
   createdAt: createdAt(),
 });
 
@@ -501,7 +529,7 @@ export const theoryAttempts = pgTable("theory_attempts", {
   answerText: text("answer_text").notNull(),
   score: real("score"),
   maxScore: real("max_score"),
-  feedback: jsonb("feedback"),
+  feedback: jsonb("feedback").$type<{ covered: string[]; missed: string[]; tip: string; verdict: string }>(),
   createdAt: createdAt(),
 });
 
