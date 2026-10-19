@@ -26,6 +26,7 @@ npm run build && npm run e2e:m2   # Milestone 2 acceptance in a real browser
 npm run build && npm run e2e:m3   # Milestone 3 acceptance (upload → questions, reuse, provider failover)
 npm run build && npm run e2e:m4   # Milestone 4 acceptance (a classmate sees and practises shared questions)
 npm run build && npm run e2e:m5   # Milestone 5 acceptance (tutor cites the right page, refuses to invent)
+npm run build && npm run e2e:m6   # Milestone 6 acceptance (limit → Week Pass → limits lift; push, cron, landing)
 npm run typecheck
 npm run lint
 ```
@@ -182,13 +183,43 @@ The engine in `lib/exam-engine` is ported from SonoCBT's exam runtime: `lib/exam
   - **Also covered:** a 20-card flashcard session reaches its summary, and a theory answer is marked against its guide.
   - **Service-level tests:** in `tests/tutor.test.ts`, `tests/flashcards.test.ts` and `tests/theory.test.ts`. They also cover an AI reply that cites nothing being refused, classmates' notes, exam-in-progress refusals and the daily caps.
 
+**Milestone 6 — Social and monetisation** ✅ (designs 4a, 3a–3i, 6a–6e)
+- **Paystack passes:** Week Pass ₦500 (7 days) and Semester Pass ₦2,000 (150 days). Checkout goes through Paystack's transaction API. The callback verifies server-side, and the signed `charge.success` webhook (HMAC-SHA512) applies a payment exactly once. The plan is worked out from `proUntil`, so limits lift on the next request.
+- **Weekly challenges (`lib/challenges.ts`):**
+  - **Scheduling:** the cron worker schedules next Friday's challenge (18:00–22:00 Lagos, 20 questions in 15 minutes) for every course with at least 20 shared questions.
+  - **Same paper for everyone:** each challenge gets a fixed question set, stored as a private bank, so questions added later don't change it.
+  - **Idempotent:** ids come from the course and the date, so running it again creates nothing.
+- **Push reminders (`lib/push.ts`, Web Push with VAPID):**
+  - **Turning it on:** "Notifications on this phone" on Profile subscribes the device. The service worker shows each notification and opens the right screen when it's tapped.
+  - **What gets sent:**
+    - an upload that finishes in the background
+    - the daily reminder at the student's chosen time, skipped if they've already studied
+    - a streak nudge from 21:00 when yesterday's streak hasn't been kept
+    - "challenge is live", to students who tapped "Join · remind me" and to classmates who opted in
+  - **Sent once:** each notification is logged once per user, kind and key (`push_log`). Subscriptions the push service reports as gone are deleted.
+- **Rate limits (`lib/rate-limit.ts`):**
+  - **Where they apply:** uploads, local file PUTs, tutor and theory requests, checkout, checkout returns and email sign-in links.
+  - **How they count:** per user and per IP, in one-minute windows counted in Postgres, so they hold across serverless instances. They're tuned to stop scripts, not students. They are separate from the plan's daily allowances.
+- **Landing page (4a) at `/`:**
+  - **Content:** hero, how it works, features, pricing, FAQ and "Install the app".
+  - **Pricing:** read from `lib/plans.ts`, so the page always shows what the app enforces.
+  - **Signed-in students** go to `/home`.
+- **Acceptance, checked in a real browser against a production build:** `npm run build && npm run e2e:m6`.
+  - **Payment:** a free student uses the day's 40 AI questions and sees the limit screen with Go Pro. They buy a ₦500 Week Pass through checkout, with the signed webhook accepted once. Straight away they have "14 of 15 uploads and 360 of 400 AI questions left today", and the next upload makes questions.
+  - **Without a key:** the run uses a local stand-in for Paystack's API (`e2e/support/paystack-stand-in.mts`).
+  - **With a test key:** `PAYSTACK_SECRET_KEY=sk_test_… E2E_PAYSTACK=real npm run e2e:m6` opens a visible browser for you to complete Paystack's test checkout by hand.
+  - **Also covered:** the Profile push switch, a push delivered to the service worker and shown, the cron (challenges scheduled, 401 without the secret), and the landing page.
+  - **Service-level tests:** `tests/challenges.test.ts`, `tests/push.test.ts` (including real VAPID and aes128gcm requests to a local push endpoint) and `tests/rate-limit.test.ts`.
+
 **Setting up AI and storage**
 1. **Gemini (required for real questions):** get a free key at aistudio.google.com and set `GEMINI_API_KEY`. `GEMINI_MODEL` takes a comma-separated fallback list. Check the current free-tier models and limits when you set it up, because they change often. `GEMINI_EMBED_MODEL` defaults to `gemini-embedding-001`.
 2. **Groq (optional fallback):** a free key from console.groq.com in `GROQ_API_KEY`. `GROQ_MODEL` is optional.
 3. **Cloudflare R2:**
    - **Variables:** set `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` and `R2_BUCKET`. The bucket stays private.
    - **CORS rule:** add one to the bucket so phones can PUT to it: allowed origin `APP_URL`, method `PUT`, header `Content-Type`.
-4. **Cron:** set `CRON_SECRET`. On the Vercel Hobby plan, crons run at most once a day, so either use Pro or point any every-minute scheduler at `/api/cron/jobs` with `Authorization: Bearer $CRON_SECRET`. Uploads are also processed straight away after upload and while the progress screen is open.
+4. **Push reminders:** generate keys with `npx web-push generate-vapid-keys` and set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` (a `mailto:` address). Without them, nothing is sent and the Profile switch is hidden. On iPhone, push works only once Sono is added to the Home Screen.
+5. **Paystack:** set `PAYSTACK_SECRET_KEY` (`sk_test_…` for test mode), and set the webhook URL in the Paystack dashboard to `$APP_URL/api/paystack/webhook`.
+6. **Cron:** set `CRON_SECRET`. On the Vercel Hobby plan, crons run at most once a day, so either use Pro or point any every-minute scheduler at `/api/cron/jobs` with `Authorization: Bearer $CRON_SECRET`. Uploads are also processed straight away after upload and while the progress screen is open. Each run also schedules next Friday's challenges, sends due reminders, and clears old rate-limit counters. Reminders are due within 30 minutes of their time, so the scheduler must run at least every few minutes.
 
 **Account screens** (designs 6a–6e desktop, 3a–3i phone)
 | Route | What it does |
@@ -196,7 +227,8 @@ The engine in `lib/exam-engine` is ported from SonoCBT's exam runtime: `lib/exam
 | `/leaderboard` | Weekly / all-time / department board per course, ranked by score then time. Your own row is pinned. Live challenge countdown with "Join · remind me". Last challenge result. |
 | `/leaderboard/challenges/[id]` | Closed challenge: placing, Top %, XP and badge, class average, final standings, share. |
 | `/api/share/challenge/[id]` | 1080×1080 share card (PNG) with invite link and QR. |
-| `/profile` | Handle, anonymous toggle, notification toggles and reminder time, plan card, theme, data export, account deletion. |
+| `/` | Landing page (4a). Signed-in students go to `/home`. |
+| `/profile` | Handle, anonymous toggle, push notifications on this phone, notification toggles and reminder time, plan card, theme, data export, account deletion. |
 | `?paywall=1` on any page | Paywall: bottom sheet on phones, modal on desktop. Paystack checkout. |
 | `/billing/callback`, `/api/paystack/webhook`, `/billing/success` | Verify payments server-side and extend `proUntil`. Passes stack, and a payment is applied only once. |
 | `/onboarding` | See Milestone 1 above. |
@@ -215,13 +247,20 @@ The build brief is the source of truth for product rules:
 - **Leaderboard names:** anonymous by default.
 - **Paywall copy:** "Go Pro" instead of "Go unlimited", because Pro has daily caps.
 - **Semester Pass length:** 150 days from purchase, per the brief, rather than a fixed 28 Feb.
+- **Landing pricing:** shows the real limits ("2 uploads a day, 20 pages each", "15 uploads a day" on a pass), not the design's "3 uploads / 2 mocks" and "Unlimited".
 
-## Next milestones
+## Status
 
-The brief's build order from here:
-- **Milestone 6:** social and monetisation. Most of it was built early: leaderboards, challenges, share cards, streaks, daily limits, Paystack passes and referrals. What's left is the acceptance run: a free user hits the daily question limit, buys a ₦500 Week Pass in Paystack test mode, and the limits lift immediately. That needs a Paystack test key.
+All six milestones in the brief are built, and each has an acceptance run (`npm run e2e:m2` … `e2e:m6`). Still to check with real keys:
+- **AI:** real questions from Gemini, with Groq as the fallback.
+- **Storage:** uploads to R2.
+- **Payments:** Paystack test mode (`E2E_PAYSTACK=real`).
+- **Push:** a real phone receiving reminders.
 
-The Account and social screens in Milestone 6 were built early, from the designs. Landing page 4a comes with the marketing work.
+Landing page differences from 4a:
+- **Hero badge:** it says "Courses ready for 30+ Nigerian universities", not "Used by students at 40+…", because there are no users yet.
+- **School row:** short school names, not logos.
+- **Footer:** links only to Contact, since there are no Privacy or Terms pages yet.
 
 **Local testing tips** (demo mode):
 - `/courses/<id>/mock?quick=1` adds a 1-minute timer for trying auto-submit.

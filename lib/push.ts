@@ -39,7 +39,7 @@ const webPushSender: PushSender = async (target, payload) => {
   // web-push encrypts and signs (aes128gcm + VAPID); fetch sends it, with a timeout.
   const req = webpush.generateRequestDetails({ endpoint: target.endpoint, keys: { p256dh: target.p256dh, auth: target.auth } }, JSON.stringify(payload), {
     vapidDetails: {
-      subject: process.env.VAPID_SUBJECT || `mailto:${process.env.SUPPORT_EMAIL || "support@sonostudy.app"}`,
+      subject: process.env.VAPID_SUBJECT || `mailto:${process.env.SUPPORT_EMAIL || "support@sono.study"}`,
       publicKey: process.env.VAPID_PUBLIC_KEY!,
       privateKey: process.env.VAPID_PRIVATE_KEY!,
     },

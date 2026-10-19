@@ -1,7 +1,8 @@
 /**
  * Milestone 6 acceptance, in a real browser against a production build (run `npm run build` first):
  * a free user hits the daily question limit, buys a ₦500 Week Pass through Paystack checkout,
- * and the limits lift immediately.
+ * and the limits lift immediately. Then: the landing page, the cron's weekly challenges and
+ * reminders, and a push notification shown by the service worker.
  *
  * Paystack: with no key set, a local stand-in that speaks Paystack's transaction API
  * (initialize → checkout → signed charge.success webhook → callback → verify) is used.
@@ -14,6 +15,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { chromium } from "playwright-core";
+import webpush from "web-push";
 import { makeNotesPdf } from "../tests/fixtures/notes";
 import { startPaystackStandIn } from "./support/paystack-stand-in.mjs";
 
@@ -26,6 +28,8 @@ const REAL = process.env.E2E_PAYSTACK === "real";
 const KEY = REAL ? process.env.PAYSTACK_SECRET_KEY : "sk_test_standin";
 if (REAL && !KEY?.startsWith("sk_test_")) throw new Error("E2E_PAYSTACK=real needs PAYSTACK_SECRET_KEY=sk_test_…");
 const STAND_IN = 3290;
+const VAPID = webpush.generateVAPIDKeys();
+const CRON_SECRET = "e2e-cron";
 
 const log = (...a: unknown[]) => console.log("✓", ...a);
 const fail = (m: string) => {
@@ -49,6 +53,9 @@ const server = spawn("node_modules/.bin/next", ["start", "-p", String(PORT)], {
     AI_PROVIDERS: "fake",
     APP_URL: B,
     PAYSTACK_SECRET_KEY: KEY,
+    VAPID_PUBLIC_KEY: VAPID.publicKey,
+    VAPID_PRIVATE_KEY: VAPID.privateKey,
+    CRON_SECRET,
     ...(REAL ? {} : { PAYSTACK_API_URL: `http://localhost:${STAND_IN}` }),
     PORT: String(PORT),
   },
@@ -142,6 +149,50 @@ else fail("second upload made no questions");
 await page.goto(B + "/profile", { waitUntil: "networkidle" });
 if (/Pro|Week Pass/.test(await page.locator("main").innerText())) log("profile shows the pass");
 await shot("profile");
+
+// 4. Push: the Profile switch, then a notification delivered to the service worker.
+await page.context().grantPermissions(["notifications"], { origin: B });
+await page.goto(B + "/profile", { waitUntil: "networkidle" });
+const pushRow = page.getByRole("switch", { name: "Notifications on this phone" });
+if (await pushRow.count()) log("Profile shows \"Notifications on this phone\" (VAPID keys set)");
+else fail("push switch missing on Profile");
+await pushRow.click();
+await page.waitForFunction(() => navigator.serviceWorker.getRegistration("/").then((r) => !!r?.active), null, { timeout: 15_000 });
+await page.waitForTimeout(1500);
+const pushState = (await pushRow.getAttribute("aria-checked")) === "true" ? "subscribed" : (await page.locator("main").innerText()).includes("Couldn't turn on") ? "no push service in this browser" : "off";
+log(`turning it on: ${pushState}`);
+const cdp = await page.context().newCDPSession(page);
+const regs = new Promise<string>((resolve) => cdp.on("ServiceWorker.workerRegistrationUpdated", (e) => e.registrations[0] && resolve(e.registrations[0].registrationId)));
+await cdp.send("ServiceWorker.enable");
+const registrationId = await regs;
+await cdp.send("ServiceWorker.deliverPushMessage", {
+  origin: B + "/",
+  registrationId,
+  data: JSON.stringify({ title: "Your questions are ready", body: "GST111 week 4: 24 questions.", url: "/courses/crs-gst111", tag: "e2e" }),
+});
+let shown: string[] = [];
+for (let i = 0; i < 20 && !shown.length; i++) {
+  await page.waitForTimeout(500);
+  shown = await page.evaluate(async () => (await (await navigator.serviceWorker.getRegistration("/"))!.getNotifications()).map((x) => `${x.title} · ${x.body}`));
+}
+if (shown.includes("Your questions are ready · GST111 week 4: 24 questions.")) log(`service worker showed the push: "${shown[0]}"`);
+else fail(`notification not shown: ${JSON.stringify(shown)}`);
+
+// 5. Cron: schedules next Friday's challenges, sends due reminders, refuses without the secret.
+const denied = await fetch(B + "/api/cron/jobs");
+const cron = await (await fetch(B + "/api/cron/jobs", { headers: { authorization: `Bearer ${CRON_SECRET}` } })).json();
+if (denied.status === 401 && Array.isArray(cron.challengesCreated) && cron.reminders) {
+  log(`cron ran: ${cron.challengesCreated.length} new Friday challenge(s) (${cron.challengesCreated.join(", ") || "already scheduled"}), reminders ${JSON.stringify(cron.reminders)}; 401 without the secret`);
+} else fail(`cron: ${denied.status} ${JSON.stringify(cron)}`);
+
+// 6. Landing page (4a) with live pricing.
+const visitor = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+visitor.on("pageerror", (e) => errors.push(e.message));
+await visitor.goto(B + "/", { waitUntil: "networkidle" });
+const landing = await visitor.locator("body").innerText();
+if (/Upload your notes\. Practise like the real CBT\./.test(landing) && /₦500/.test(landing) && /₦2,000/.test(landing) && /2 uploads a day/.test(landing)) log("landing page shows the hero and pricing from lib/plans (₦0 · ₦500 · ₦2,000)");
+else fail("landing page content");
+await visitor.screenshot({ path: path.join(SHOTS ?? S, "m6-landing.png"), fullPage: true });
 
 if (errors.length) fail(`page errors: ${errors.join(" | ")}`);
 else log("no page errors");
