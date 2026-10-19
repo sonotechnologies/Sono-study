@@ -13,6 +13,7 @@ import { extractDocument, ExtractError, tooLittleText, type Page } from "@/lib/i
 import { headingOf, matchTopic, tidyTopic } from "@/lib/ingest/topics";
 import { enqueue, jobsAhead, RetryLater, runJobs, type Handler, type Job, type JobType } from "@/lib/jobs";
 import { MAX_PHOTOS, MAX_UPLOAD_BYTES, PLANS, UPLOAD_XP } from "@/lib/plans";
+import { notifyUploadReady } from "@/lib/push";
 import { isUploadMime, newObjectKey, readObject, signedPutUrl, storageMode, UPLOAD_TYPES, type SignedPut, type UploadMime } from "@/lib/storage";
 import { getUsage, recordUsage } from "@/lib/usage";
 
@@ -521,6 +522,7 @@ async function chunkFinished(db: Db, uploadId: string, madeQ: number, madeF: num
   await db.update(users).set({ xp: sql`${users.xp} + ${UPLOAD_XP}` }).where(eq(users.id, u.userId));
   await ensureUploadBank(db, u.id);
   await enqueue(db, "embed_upload", { uploadId: u.id }, { userId: u.userId, priority: -10 });
+  await notifyUploadReady(db, u);
 }
 
 export const embedUpload: Handler = async (db, job) => {

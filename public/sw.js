@@ -2,10 +2,11 @@
  * - Static build assets and fonts: cache-first (they're content-hashed).
  * - Pages: network-first, falling back to the last copy seen on this phone, then /offline.
  * - Everything else (server actions, RSC payloads, APIs, payments): network only.
+ * - Push: shows reminders sent by the server and opens the right screen when tapped.
  * - Mocks: the exam page asks to be saved ("warm", ported from SonoCBT's exam
  *   service worker) so it reopens with no connection; answers live in IndexedDB.
  */
-const VERSION = "v2";
+const VERSION = "v3";
 const STATIC_CACHE = `sono-static-${VERSION}`;
 const PAGE_CACHE = `sono-pages-${VERSION}`;
 const PRECACHE = ["/offline", "/icon-192.png", "/manifest.webmanifest"];
@@ -121,4 +122,39 @@ self.addEventListener("message", (event) => {
     // Submitted: the saved mock page is no longer needed.
     event.waitUntil(caches.open(PAGE_CACHE).then((c) => c.delete(new URL(msg.url, self.location.origin).href)));
   }
+});
+
+self.addEventListener("push", (event) => {
+  let msg = {};
+  try {
+    msg = event.data ? event.data.json() : {};
+  } catch {
+    msg = { body: event.data ? event.data.text() : "" };
+  }
+  event.waitUntil(
+    self.registration.showNotification(msg.title || "Sono Study", {
+      body: msg.body || "",
+      tag: msg.tag,
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      data: { url: msg.url || "/home" },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = new URL((event.notification.data && event.notification.data.url) || "/home", self.location.origin).href;
+  event.waitUntil(
+    (async () => {
+      const open = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      const same = open.find((c) => c.url === url) || open.find((c) => new URL(c.url).origin === self.location.origin);
+      if (same) {
+        await same.focus();
+        if (same.url !== url && "navigate" in same) await same.navigate(url);
+        return;
+      }
+      await self.clients.openWindow(url);
+    })(),
+  );
 });

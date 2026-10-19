@@ -1,13 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getDb } from "@/db";
 import { ensureWeeklyChallenges } from "@/lib/challenges";
+import { sendDueReminders } from "@/lib/push";
 import { processQueue } from "@/lib/uploads";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 /**
- * Queue worker (plus scheduling next Friday's challenges), run every minute by Vercel Cron (vercel.json). Vercel sends
+ * Queue worker (plus next Friday's challenges and push reminders), run every minute by Vercel Cron (vercel.json). Vercel sends
  * "Authorization: Bearer $CRON_SECRET"; any other scheduler can do the same.
  */
 export async function GET(req: NextRequest) {
@@ -17,6 +18,7 @@ export async function GET(req: NextRequest) {
   }
   const db = await getDb();
   const challengesCreated = await ensureWeeklyChallenges(db);
-  const summary = await processQueue(db, { budgetMs: 45_000 });
-  return NextResponse.json({ ...summary, challengesCreated });
+  const reminders = await sendDueReminders(db);
+  const summary = await processQueue(db, { budgetMs: 40_000 });
+  return NextResponse.json({ ...summary, challengesCreated, reminders });
 }

@@ -57,6 +57,13 @@
       "when": 1792227560628,
       "tag": "0007_flashcards_tutor",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792444213687,
+      "tag": "0008_push_rate_limits",
+      "breakpoints": true
     }
   ]
 }

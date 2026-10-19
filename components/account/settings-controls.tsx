@@ -1,10 +1,12 @@
 "use client";
 
-import { useActionState, useOptimistic, useState, useTransition } from "react";
+import { useActionState, useEffect, useOptimistic, useState, useTransition } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Moon, Sun } from "lucide-react";
 import {
   deleteAccount,
+  removePushSubscription,
+  savePushSubscription,
   setTheme,
   signOutAction,
   updateHandle,
@@ -66,6 +68,80 @@ export function ToggleRow({
           })
         }
       />
+    </div>
+  );
+}
+
+type PushState = "loading" | "unsupported" | "denied" | "off" | "on";
+
+function urlBase64ToBytes(base64: string) {
+  const raw = atob((base64 + "=".repeat((4 - (base64.length % 4)) % 4)).replace(/-/g, "+").replace(/_/g, "/"));
+  return Uint8Array.from(raw, (c) => c.charCodeAt(0));
+}
+
+async function swRegistration() {
+  return (await navigator.serviceWorker.getRegistration("/")) ?? navigator.serviceWorker.register("/sw.js");
+}
+
+/** "Reminders on this phone": asks for permission and subscribes this device to Web Push. */
+export function PushRow({ publicKey }: { publicKey: string }) {
+  const [state, setState] = useState<PushState>("loading");
+  const [error, setError] = useState(false);
+  const [pending, start] = useTransition();
+
+  useEffect(() => {
+    const detect = async (): Promise<PushState> => {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) return "unsupported";
+      if (Notification.permission === "denied") return "denied";
+      const reg = await navigator.serviceWorker.getRegistration("/");
+      return (await reg?.pushManager.getSubscription()) ? "on" : "off";
+    };
+    void detect().then(setState, () => setState("off"));
+  }, []);
+
+  const toggle = (next: boolean) =>
+    start(async () => {
+      setError(false);
+      try {
+        const reg = await swRegistration();
+        await navigator.serviceWorker.ready;
+        if (next) {
+          if ((await Notification.requestPermission()) !== "granted") {
+            setState(Notification.permission === "denied" ? "denied" : "off");
+            return;
+          }
+          const sub = (await reg.pushManager.getSubscription()) ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToBytes(publicKey) }));
+          await savePushSubscription(sub.toJSON());
+          setState("on");
+        } else {
+          const sub = await reg.pushManager.getSubscription();
+          if (sub) {
+            await removePushSubscription(sub.endpoint);
+            await sub.unsubscribe();
+          }
+          setState("off");
+        }
+      } catch {
+        setError(true);
+      }
+    });
+
+  const hint =
+    state === "unsupported"
+      ? "Add Sono to your home screen to get reminders on this phone."
+      : state === "denied"
+        ? "Notifications are blocked. Allow them in your browser's site settings."
+        : state === "on"
+          ? "Reminders below arrive on this phone."
+          : "Turn on to get the reminders below on this phone.";
+  return (
+    <div className={cn(ROW, "min-h-16")}>
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <label htmlFor="toggle-push">Notifications on this phone</label>
+        <span className="text-[13px] text-ink-muted">{hint}</span>
+        {error && <span className="text-[13px] text-wrong">Couldn&apos;t turn on notifications. Try again.</span>}
+      </div>
+      <Switch id="toggle-push" checked={state === "on"} disabled={pending || state === "loading" || state === "unsupported" || state === "denied"} onCheckedChange={toggle} />
     </div>
   );
 }

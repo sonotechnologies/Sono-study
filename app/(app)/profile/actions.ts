@@ -4,10 +4,12 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { and, eq, ne } from "drizzle-orm";
+import { z } from "zod";
 import { getDb } from "@/db";
 import { users } from "@/db/schema";
 import { demoMode, signOut } from "@/lib/auth";
 import { normaliseHandle } from "@/lib/identity";
+import { removeSubscription, saveSubscription } from "@/lib/push";
 import { requireViewer } from "@/lib/viewer";
 
 const TOGGLES = ["anonymous", "notifyDailyReminder", "notifyStreak", "notifyChallenge"] as const;
@@ -77,4 +79,24 @@ export async function deleteAccount(_prev: DeleteState, form: FormData): Promise
 
 export async function signOutAction() {
   await signOut({ redirectTo: "/login" });
+}
+
+const pushSubscription = z.object({
+  endpoint: z.url().startsWith("https://"),
+  keys: z.object({ p256dh: z.string().min(16).max(200), auth: z.string().min(8).max(100) }),
+});
+
+/** Saves this device's Web Push subscription (from PushManager.subscribe). */
+export async function savePushSubscription(sub: unknown) {
+  const parsed = pushSubscription.safeParse(sub);
+  if (!parsed.success) throw new Error("Invalid subscription");
+  const viewer = await requireViewer();
+  const { endpoint, keys } = parsed.data;
+  await saveSubscription(await getDb(), viewer.id, { endpoint, p256dh: keys.p256dh, auth: keys.auth });
+}
+
+export async function removePushSubscription(endpoint: string) {
+  if (typeof endpoint !== "string") throw new Error("Invalid subscription");
+  const viewer = await requireViewer();
+  await removeSubscription(await getDb(), viewer.id, endpoint);
 }

@@ -659,6 +659,51 @@ export const payments = pgTable(
   (t) => [index("payments_user_idx").on(t.userId)],
 );
 
+// ── Notifications and abuse limits ───────────────────────────────────────────
+
+/** A browser's Web Push subscription (one per device; the endpoint is unique). */
+export const pushSubscriptions = pgTable(
+  "push_subscriptions",
+  {
+    endpoint: text("endpoint").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("push_subscriptions_user_idx").on(t.userId)],
+);
+
+export type PushKind = "upload_ready" | "daily_reminder" | "streak" | "challenge";
+
+/** One row per notification sent, so each reminder goes out once (e.g. key = the Lagos date). */
+export const pushLog = pgTable(
+  "push_log",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: text("kind").$type<PushKind>().notNull(),
+    key: text("key").notNull(),
+    delivered: integer("delivered").notNull().default(0),
+    sentAt: ts("sent_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.kind, t.key] })],
+);
+
+/** Fixed-window request counters, e.g. key "upload:user:<id>" for the minute starting windowStart. */
+export const rateLimits = pgTable(
+  "rate_limits",
+  {
+    key: text("key").notNull(),
+    windowStart: ts("window_start").notNull(),
+    count: integer("count").notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.key, t.windowStart] })],
+);
+
 // ── Relations ────────────────────────────────────────────────────────────────
 
 export const usersRelations = relations(users, ({ one, many }) => ({

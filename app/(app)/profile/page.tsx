@@ -5,6 +5,7 @@ import { Avatar, ButtonLink, Pill } from "@/components/ui/primitives";
 import {
   DeleteAccountRow,
   HandleEditor,
+  PushRow,
   ReminderTime,
   SignOutRow,
   ThemeRow,
@@ -17,6 +18,7 @@ import { cn } from "@/lib/cn";
 import { displayCourseCode, formatDate, formatNaira } from "@/lib/format";
 import { anonymousName } from "@/lib/identity";
 import { PASSES, planSummary } from "@/lib/plans";
+import { vapidPublicKey } from "@/lib/push";
 import { openReportCount } from "@/lib/reports";
 import { requireViewer } from "@/lib/viewer";
 
@@ -132,6 +134,7 @@ export default async function ProfilePage() {
           </section>
 
           <Group label="Notifications" className="order-3 lg:order-none">
+            {vapidPublicKey() && <PushRow publicKey={vapidPublicKey()!} />}
             <ToggleRow setting="notifyDailyReminder" initial={viewer.notifyDailyReminder} label="Daily study reminder">
               <ReminderTime initial={viewer.reminderTime} />
             </ToggleRow>
