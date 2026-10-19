@@ -1,6 +1,9 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-const API = "https://api.paystack.co";
+/** PAYSTACK_API_URL points the app at a stand-in (the e2e checks use one); production always uses Paystack. */
+function api(): string {
+  return (process.env.PAYSTACK_API_URL || "https://api.paystack.co").replace(/\/$/, "");
+}
 
 export function paystackConfigured(): boolean {
   return Boolean(process.env.PAYSTACK_SECRET_KEY);
@@ -13,7 +16,7 @@ function secret(): string {
 }
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API}${path}`, {
+  const res = await fetch(`${api()}${path}`, {
     ...init,
     headers: { Authorization: `Bearer ${secret()}`, "Content-Type": "application/json", ...init?.headers },
     cache: "no-store",
