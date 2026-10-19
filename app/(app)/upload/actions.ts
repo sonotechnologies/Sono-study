@@ -9,6 +9,7 @@ import { getDb } from "@/db";
 import { uploads } from "@/db/schema";
 import { setUploadSharing } from "@/lib/banks";
 import { ExamError, startAttempt } from "@/lib/exam-engine/service";
+import { checkRateLimit, RateLimitError, requestIp } from "@/lib/rate-limit";
 import { confirmUpload, prepareUpload, processQueue, questionSourceId, UploadError, type PrepareResult } from "@/lib/uploads";
 import { requireViewer } from "@/lib/viewer";
 
@@ -28,10 +29,13 @@ export async function prepareUploadAction(raw: z.infer<typeof prepareInput>): Pr
   const parsed = prepareInput.safeParse(raw);
   if (!parsed.success) return { ok: false, error: "Pick your files again." };
   const viewer = await requireViewer();
+  const db = await getDb();
   try {
-    return { ok: true, ...(await prepareUpload(await getDb(), viewer.id, parsed.data)) };
+    await checkRateLimit(db, "upload", { userId: viewer.id, ip: await requestIp() });
+    return { ok: true, ...(await prepareUpload(db, viewer.id, parsed.data)) };
   } catch (err) {
     if (err instanceof UploadError) return { ok: false, error: err.message, code: err.code };
+    if (err instanceof RateLimitError) return { ok: false, error: err.message };
     throw err;
   }
 }
@@ -41,9 +45,10 @@ export async function confirmUploadAction(uploadId: string): Promise<{ ok: true 
   const viewer = await requireViewer();
   const db = await getDb();
   try {
+    await checkRateLimit(db, "upload", { userId: viewer.id, ip: await requestIp() });
     await confirmUpload(db, viewer.id, uploadId);
   } catch (err) {
-    if (err instanceof UploadError) return { ok: false, error: err.message };
+    if (err instanceof UploadError || err instanceof RateLimitError) return { ok: false, error: err.message };
     throw err;
   }
   after(() => processQueue(db, { budgetMs: 40_000 }).catch((err) => console.error("[jobs]", err)));

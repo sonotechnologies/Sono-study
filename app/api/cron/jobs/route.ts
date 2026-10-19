@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getDb } from "@/db";
 import { ensureWeeklyChallenges } from "@/lib/challenges";
 import { sendDueReminders } from "@/lib/push";
+import { pruneRateLimits } from "@/lib/rate-limit";
 import { processQueue } from "@/lib/uploads";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +20,7 @@ export async function GET(req: NextRequest) {
   const db = await getDb();
   const challengesCreated = await ensureWeeklyChallenges(db);
   const reminders = await sendDueReminders(db);
+  await pruneRateLimits(db);
   const summary = await processQueue(db, { budgetMs: 40_000 });
   return NextResponse.json({ ...summary, challengesCreated, reminders });
 }

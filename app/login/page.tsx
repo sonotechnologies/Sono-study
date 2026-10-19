@@ -3,7 +3,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Logo } from "@/components/logo";
 import { buttonClass } from "@/components/ui/primitives";
+import { getDb } from "@/db";
 import { authEnabled, demoMode, hasEmail, hasGoogle, signIn } from "@/lib/auth";
+import { checkRateLimit, requestIp } from "@/lib/rate-limit";
 import { getViewerId } from "@/lib/viewer";
 
 export const metadata: Metadata = { title: "Sign in" };
@@ -39,7 +41,13 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
               className="flex flex-col gap-2"
               action={async (form: FormData) => {
                 "use server";
-                await signIn("resend", { email: String(form.get("email") ?? ""), redirectTo: "/home" });
+                const email = String(form.get("email") ?? "").trim().toLowerCase();
+                try {
+                  await checkRateLimit(await getDb(), "signIn", { userId: email, ip: await requestIp() });
+                } catch {
+                  redirect("/login?error=slow-down");
+                }
+                await signIn("resend", { email, redirectTo: "/home" });
               }}
             >
               <label htmlFor="email" className="text-sm text-ink-muted">
@@ -57,7 +65,11 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
               <button className={buttonClass("secondary", "lg")}>Email me a link</button>
             </form>
           )}
-          {sp.error && <p role="alert" className="text-sm text-wrong">Sign-in didn&apos;t work. Please try again.</p>}
+          {sp.error && (
+            <p role="alert" className="text-sm text-wrong">
+              {sp.error === "slow-down" ? "Too many sign-in links asked for. Wait a minute and try again." : "Sign-in didn't work. Please try again."}
+            </p>
+          )}
         </div>
       ) : demoMode ? (
         <Link href="/home" className={buttonClass("primary", "lg")}>

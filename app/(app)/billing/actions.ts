@@ -6,6 +6,7 @@ import { getDb } from "@/db";
 import { applySuccessfulPayment, createPendingPayment } from "@/lib/payments";
 import { initializeTransaction, paystackConfigured } from "@/lib/paystack";
 import { PASSES, type PassProduct } from "@/lib/plans";
+import { checkRateLimit, RateLimitError, requestIp } from "@/lib/rate-limit";
 import { requireViewer } from "@/lib/viewer";
 
 export interface CheckoutState {
@@ -24,6 +25,12 @@ export async function startCheckout(_prev: CheckoutState, form: FormData): Promi
   if (product !== "week" && product !== "semester") return { error: "Pick a pass first." };
   const viewer = await requireViewer();
   const db = await getDb();
+  try {
+    await checkRateLimit(db, "payment", { userId: viewer.id, ip: await requestIp() });
+  } catch (err) {
+    if (err instanceof RateLimitError) return { error: err.message };
+    throw err;
+  }
   const payment = await createPendingPayment(db, viewer.id, product as PassProduct);
 
   if (!paystackConfigured()) {
