@@ -4,6 +4,7 @@ import * as s from "./schema";
 import { SCHOOLS } from "./schools-list";
 import { ensureQuestionBank } from "./question-bank";
 import { addDays, lagosDate, weekStart } from "../lib/time";
+import { nextFridayChallengeStart } from "../lib/challenges";
 
 export const DEMO_USER_ID = "demo-tolu";
 
@@ -21,14 +22,6 @@ function mulberry32(seed: number) {
 const FIRST = ["ada", "chidi", "fola", "ngozi", "seun", "kemi", "ibrahim", "tunde", "amaka", "bola", "emeka", "funmi", "gbenga", "halima", "ife", "jide", "kunle", "lola", "musa", "nneka", "obinna", "pelumi", "rukky", "sade", "temi", "uche", "victor", "wale", "yemi", "zainab"];
 const SUFFIX = ["", "_", ".b", "_a", ".mc", ".writes", "_reads", "x", "99", ".dev", "_o", "2k"];
 const DEPARTMENTS = ["Mass Communication", "Economics", "Law", "Computer Science", "English", "Accounting"];
-
-/** Friday 18:00 Lagos on or after `now` (or next week's if this week's has passed). */
-function nextFridayChallengeStart(now: Date): Date {
-  const watNow = new Date(now.getTime() + 3600_000);
-  const daysToFri = (5 - watNow.getUTCDay() + 7) % 7;
-  const start = Date.UTC(watNow.getUTCFullYear(), watNow.getUTCMonth(), watNow.getUTCDate() + daysToFri, 17); // 18:00 WAT
-  return start > now.getTime() ? new Date(start) : addDays(new Date(start), 7);
-}
 
 /** Inserts the seeded school list. Safe to run on every start: existing rows are left alone. */
 export async function ensureSchools(db: Db) {

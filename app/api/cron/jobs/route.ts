@@ -1,12 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getDb } from "@/db";
+import { ensureWeeklyChallenges } from "@/lib/challenges";
 import { processQueue } from "@/lib/uploads";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 /**
- * Queue worker, run every minute by Vercel Cron (vercel.json). Vercel sends
+ * Queue worker (plus scheduling next Friday's challenges), run every minute by Vercel Cron (vercel.json). Vercel sends
  * "Authorization: Bearer $CRON_SECRET"; any other scheduler can do the same.
  */
 export async function GET(req: NextRequest) {
@@ -14,6 +15,8 @@ export async function GET(req: NextRequest) {
   if (secret ? req.headers.get("authorization") !== `Bearer ${secret}` : process.env.NODE_ENV === "production") {
     return new NextResponse("Unauthorized", { status: 401 });
   }
-  const summary = await processQueue(await getDb(), { budgetMs: 50_000 });
-  return NextResponse.json(summary);
+  const db = await getDb();
+  const challengesCreated = await ensureWeeklyChallenges(db);
+  const summary = await processQueue(db, { budgetMs: 45_000 });
+  return NextResponse.json({ ...summary, challengesCreated });
 }

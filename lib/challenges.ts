@@ -1,7 +1,73 @@
-import { and, asc, count, desc, eq, gt, lte, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, inArray, lte, ne, sql } from "drizzle-orm";
 import type { Db } from "@/db";
-import { challenges, challengeSignups, leaderboardEntries, type Challenge } from "@/db/schema";
+import { banks, challenges, challengeSignups, leaderboardEntries, questions, type Challenge } from "@/db/schema";
+import { seededRandom, shuffle } from "./exam-engine/rules";
 import { getChallengeBoard, type BoardRow } from "./leaderboard";
+import { addDays } from "./time";
+
+/** Weekly challenge format: Friday 18:00–22:00 Lagos, 20 questions in 15 minutes. */
+export const WEEKLY_CHALLENGE = { questionCount: 20, durationSec: 15 * 60, windowMs: 4 * 3600_000 } as const;
+
+/** Friday 18:00 Lagos on or after `now` (or next week's if this week's has passed). */
+export function nextFridayChallengeStart(now: Date): Date {
+  const watNow = new Date(now.getTime() + 3600_000);
+  const daysToFri = (5 - watNow.getUTCDay() + 7) % 7;
+  const start = Date.UTC(watNow.getUTCFullYear(), watNow.getUTCMonth(), watNow.getUTCDate() + daysToFri, 17); // 18:00 WAT
+  return start > now.getTime() ? new Date(start) : addDays(new Date(start), 7);
+}
+
+/**
+ * Cron step: makes next Friday's challenge for every course with enough shared questions.
+ * Each gets its own fixed question set (a private, ownerless bank), so everyone sits the same
+ * paper even if questions are added later. Ids are derived from course + date, so running it
+ * again (or twice at once) creates nothing new. Returns the ids it created.
+ */
+export async function ensureWeeklyChallenges(db: Db, now = new Date()): Promise<string[]> {
+  const startsAt = nextFridayChallengeStart(now);
+  const day = startsAt.toISOString().slice(0, 10);
+  const pool = and(eq(questions.status, "active"), eq(questions.visibility, "shared"), ne(questions.type, "theory"));
+  const eligible = await db
+    .select({ courseId: questions.courseId })
+    .from(questions)
+    .where(pool)
+    .groupBy(questions.courseId)
+    .having(sql`count(*) >= ${WEEKLY_CHALLENGE.questionCount}`);
+  if (!eligible.length) return [];
+  const scheduled = await db
+    .select({ courseId: challenges.courseId })
+    .from(challenges)
+    .where(and(inArray(challenges.courseId, eligible.map((e) => e.courseId)), eq(challenges.startsAt, startsAt)));
+  const have = new Set(scheduled.map((c) => c.courseId));
+
+  const created: string[] = [];
+  for (const { courseId } of eligible) {
+    if (have.has(courseId)) continue;
+    const id = `chl-${courseId}-${day}`;
+    const ids = (await db.select({ id: questions.id }).from(questions).where(and(pool, eq(questions.courseId, courseId)))).map((q) => q.id).sort();
+    const picked = shuffle(ids, seededRandom(id)).slice(0, WEEKLY_CHALLENGE.questionCount);
+    const done = await db.transaction(async (tx) => {
+      const [bank] = await tx
+        .insert(banks)
+        .values({ id: `bank-${id}`, courseId, title: `Friday Challenge · ${day}`, questionIds: picked, isShared: false, verified: true })
+        .onConflictDoNothing()
+        .returning({ id: banks.id });
+      if (!bank) return false;
+      await tx.insert(challenges).values({
+        id,
+        courseId,
+        bankId: bank.id,
+        title: "Friday Challenge",
+        questionCount: picked.length,
+        durationSec: WEEKLY_CHALLENGE.durationSec,
+        startsAt,
+        endsAt: new Date(startsAt.getTime() + WEEKLY_CHALLENGE.windowMs),
+      });
+      return true;
+    });
+    if (done) created.push(id);
+  }
+  return created;
+}
 
 export interface ChallengeReward {
   xp: number;
