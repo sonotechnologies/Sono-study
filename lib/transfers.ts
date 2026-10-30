@@ -200,6 +200,8 @@ export function parseAlert(input: AlertInput): ParsedAlert {
   return { source, isCredit, amountKobo, senderName: sender, code: code ? `SONO-${code[1].toUpperCase()}` : null };
 }
 
+const NOT_STORED = "(not money in: not stored)";
+
 export type AlertResult = { status: "duplicate" } | { status: "ignored"; alert: PaymentAlert } | { status: "unmatched"; alert: PaymentAlert } | { status: "matched"; alert: PaymentAlert; payment: Payment };
 
 /** Stores a forwarded notification and, if it's money in that matches an open transfer, confirms it. */
@@ -211,7 +213,12 @@ export async function recordAlert(db: Db, input: AlertInput, now = new Date()): 
     .digest("hex");
   const [alert] = await db
     .insert(paymentAlerts)
-    .values({ source: parsed.source, title: input.title ?? null, text: input.text.slice(0, 2000), isCredit: parsed.isCredit, amountKobo: parsed.amountKobo, senderName: parsed.senderName, code: parsed.code, dedupeKey, receivedAt: now })
+    .values(
+      parsed.isCredit
+        ? { source: parsed.source, title: input.title ?? null, text: input.text.slice(0, 2000), isCredit: true, amountKobo: parsed.amountKobo, senderName: parsed.senderName, code: parsed.code, dedupeKey, receivedAt: now }
+        : // The account may be someone's personal one: keep only that a notification came (phone health), not what it said.
+          { source: parsed.source, title: null, text: NOT_STORED, isCredit: false, amountKobo: null, senderName: null, code: null, dedupeKey, receivedAt: now },
+    )
     .onConflictDoNothing()
     .returning();
   if (!alert) return { status: "duplicate" };

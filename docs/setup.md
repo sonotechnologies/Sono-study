@@ -7,7 +7,7 @@ Work through them in this order. The app runs without any of them, in demo mode;
 ## 1. Database: Neon (`DATABASE_URL`)
 1. Sign up at neon.tech and create a project. Pick the region closest to Nigeria (Europe, e.g. Frankfurt).
 2. On the project dashboard, click **Connect** and copy the connection string (`postgresql://…?sslmode=require`).
-3. Set `DATABASE_URL` to it. The app creates its tables and turns on pgvector on first start.
+3. Set `DATABASE_URL` to it. Every Vercel deploy first runs `npm run db:setup`, which creates or updates the tables, turns on pgvector and adds the school list.
 
 ## 2. Sign-in: Auth.js (`AUTH_SECRET`, Google, email)
 1. **`AUTH_SECRET`:** run `npx auth secret` (or `openssl rand -base64 32`) and paste the result.
@@ -37,8 +37,8 @@ Set `APP_URL` to your live address (e.g. `https://sono.study`).
 ## 5. Background jobs (`CRON_SECRET`)
 1. Run `openssl rand -hex 32` and set the result as `CRON_SECRET`.
 2. The worker at `/api/cron/jobs` must run every few minutes. It processes uploads, sends reminders, schedules Friday challenges and expires unpaid transfer claims.
-   - **Vercel Pro:** `vercel.json` already schedules it every minute.
-   - **Vercel Hobby** only allows a daily cron. Instead, use a free scheduler such as cron-job.org: URL `https://YOUR-DOMAIN/api/cron/jobs`, every 1–5 minutes, with the header `Authorization: Bearer YOUR_CRON_SECRET`.
+   - `vercel.json` runs it once a day, which the free Hobby plan allows (a more frequent schedule there makes the deploy fail).
+   - For every few minutes, use a free scheduler such as cron-job.org: URL `https://YOUR-DOMAIN/api/cron/jobs`, every 1–5 minutes, with the header `Authorization: Bearer YOUR_CRON_SECRET`.
 
 ## 6. Push reminders (VAPID)
 1. Run `npx web-push generate-vapid-keys`.
@@ -55,7 +55,10 @@ Students pay by transfer into your own OPay and PalmPay accounts. To confirm pay
 | `OPAY_ACCOUNT_NAME` | the name exactly as OPay shows it to senders |
 | `PALMPAY_ACCOUNT_NUMBER` / `PALMPAY_ACCOUNT_NAME` | the same for PalmPay |
 
-Leave a pair empty to hide that option. Use these accounts **only for Sono**: every incoming transfer is treated as a possible pass payment.
+Leave a pair empty to hide that option. A personal account works:
+- **Your own transfers:** money in from friends shows under "Money in that matched no one" on the admin page. You can ignore it.
+- **What Sono stores:** only alerts for money coming in. Other notifications (money you send, airtime) are recorded as "not stored", without their text.
+- **Sorting money:** a separate account just for Sono keeps your bookkeeping cleaner.
 
 ### The forwarding phone
 Any Android phone works, even an old one, as long as it stays on, charged and online.

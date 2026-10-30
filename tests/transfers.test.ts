@@ -122,6 +122,9 @@ describe("transfers", () => {
   });
 
   it("ignores money going out", async () => {
-    expect((await recordAlert(db, { app: "team.opay.pay", text: "You sent ₦503.00 to JOHN DOE" }, NOW)).status).toBe("ignored");
+    const res = await recordAlert(db, { app: "team.opay.pay", title: "Transfer", text: "You sent ₦503.00 to JOHN DOE" }, NOW);
+    expect(res.status).toBe("ignored");
+    // A personal account's other notifications aren't kept, only that one arrived.
+    if (res.status === "ignored") expect(res.alert).toMatchObject({ title: null, text: "(not money in: not stored)", amountKobo: null });
   });
 });
