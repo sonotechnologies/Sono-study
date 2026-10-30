@@ -4,6 +4,8 @@ import { Sidebar, TabBar } from "@/components/shell/nav";
 import { Paywall } from "@/components/account/paywall";
 import { extendProUntil } from "@/lib/billing";
 import { needsOnboarding } from "@/lib/onboarding";
+import { paystackConfigured } from "@/lib/paystack";
+import { transferAccounts } from "@/lib/transfers";
 import { requireViewer } from "@/lib/viewer";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -18,6 +20,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <Paywall
           proUntil={viewer.effectivePlan === "pro" ? viewer.proUntil!.toISOString() : null}
           semesterUntil={extendProUntil(viewer.proUntil, "semester").toISOString()}
+          methods={{ transfers: transferAccounts().map(({ method, name }) => ({ method, name })), paystack: paystackConfigured() }}
         />
       </Suspense>
     </div>

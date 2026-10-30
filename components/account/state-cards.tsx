@@ -180,12 +180,15 @@ export function PaymentSuccessState({
   proUntil,
   amountKobo,
   reference,
+  receipt = true,
 }: {
   variant: Variant;
   passName: string;
   proUntil: Date;
   amountKobo: number;
   reference: string;
+  /** Paystack emails a receipt; a transfer's receipt is in the student's own banking app. */
+  receipt?: boolean;
 }) {
   return (
     <Shell variant={variant}>
@@ -218,7 +221,7 @@ export function PaymentSuccessState({
           <dt className="text-ink-muted">Reference</dt>
           <dd className="truncate font-mono text-[13px]">{reference}</dd>
         </div>
-        {variant === "screen" && (
+        {variant === "screen" && receipt && (
           <div className="flex justify-between">
             <dt className="text-ink-muted">Receipt</dt>
             <dd className="font-semibold text-accent">Sent to email</dd>

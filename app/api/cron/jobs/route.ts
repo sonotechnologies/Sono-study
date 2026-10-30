@@ -3,6 +3,7 @@ import { getDb } from "@/db";
 import { ensureWeeklyChallenges } from "@/lib/challenges";
 import { sendDueReminders } from "@/lib/push";
 import { pruneRateLimits } from "@/lib/rate-limit";
+import { expireClaims } from "@/lib/transfers";
 import { processQueue } from "@/lib/uploads";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +22,7 @@ export async function GET(req: NextRequest) {
   const challengesCreated = await ensureWeeklyChallenges(db);
   const reminders = await sendDueReminders(db);
   await pruneRateLimits(db);
+  const claimsExpired = await expireClaims(db);
   const summary = await processQueue(db, { budgetMs: 40_000 });
-  return NextResponse.json({ ...summary, challengesCreated, reminders });
+  return NextResponse.json({ ...summary, challengesCreated, reminders, claimsExpired });
 }

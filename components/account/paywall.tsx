@@ -4,12 +4,13 @@ import { useActionState, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Check, X } from "lucide-react";
-import { startCheckout, type CheckoutState } from "@/app/(app)/billing/actions";
+import { startCheckout, startTransferAction, type CheckoutState } from "@/app/(app)/billing/actions";
 import { buttonClass } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
 import { weeklyCostNaira } from "@/lib/billing";
 import { formatDate, formatNaira } from "@/lib/format";
 import { PASSES, PRO_UNLOCKS, type PassProduct } from "@/lib/plans";
+import type { TransferMethod } from "@/lib/transfers";
 
 export const PAYWALL_PARAM = "paywall";
 
@@ -28,18 +29,25 @@ export function usePaywallHref() {
 export function Paywall({
   proUntil,
   semesterUntil,
+  methods,
 }: {
   /** ISO end of current Pro time, or null when on Free. */
   proUntil: string | null;
   /** ISO end date if a Semester Pass is bought now (stacks on current Pro time). */
   semesterUntil: string;
+  /** How students can pay: transfers to Sono's OPay / PalmPay, and Paystack when its key is set. */
+  methods: { transfers: { method: TransferMethod; name: string }[]; paystack: boolean };
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const open = searchParams.get(PAYWALL_PARAM) === "1";
   const [product, setProduct] = useState<PassProduct>("semester");
-  const [state, action, pending] = useActionState<CheckoutState, FormData>(startCheckout, { error: null });
+  const [paystackState, paystackAction, paystackPending] = useActionState<CheckoutState, FormData>(startCheckout, { error: null });
+  const [transferState, transferAction, transferPending] = useActionState<CheckoutState, FormData>(startTransferAction, { error: null });
+  const error = transferState.error ?? paystackState.error;
+  const pending = paystackPending || transferPending;
+  const price = formatNaira(PASSES[product].amountKobo);
 
 
   function close() {
@@ -107,7 +115,7 @@ export function Paywall({
             ))}
           </ul>
 
-          <form action={action} className="flex flex-col gap-4 lg:gap-5">
+          <form action={methods.transfers.length ? transferAction : paystackAction} className="flex flex-col gap-4 lg:gap-5">
             <fieldset className="grid grid-cols-2 gap-2.5 lg:gap-3.5 lg:pt-2">
               <legend className="sr-only">Choose a pass</legend>
               {passes.map((p) => {
@@ -141,16 +149,43 @@ export function Paywall({
                 );
               })}
             </fieldset>
-            {state.error && (
+            {error && (
               <p role="alert" className="text-sm text-wrong">
-                {state.error}
+                {error}
               </p>
             )}
-            <button type="submit" disabled={pending} className={buttonClass("primary", "lg", "w-full lg:h-14 lg:text-[17px]")}>
-              {pending ? "Opening Paystack…" : `Pay ${formatNaira(PASSES[product].amountKobo)} with Paystack`}
-            </button>
+            {methods.transfers.length > 0 && (
+              <div className={cn("grid gap-2.5", methods.transfers.length > 1 && "grid-cols-2")}>
+                {methods.transfers.map((m, i) => (
+                  <button
+                    key={m.method}
+                    type="submit"
+                    name="method"
+                    value={m.method}
+                    disabled={pending}
+                    className={buttonClass(i === 0 ? "primary" : "secondary", "lg", "w-full whitespace-nowrap px-3 lg:h-14 lg:text-[17px]")}
+                  >
+                    Pay with {m.name}
+                  </button>
+                ))}
+              </div>
+            )}
+            {methods.paystack && (
+              <button
+                type="submit"
+                formAction={paystackAction}
+                disabled={pending}
+                className={buttonClass(methods.transfers.length ? "ghost" : "primary", methods.transfers.length ? "md" : "lg", "w-full lg:text-[17px]")}
+              >
+                {paystackPending ? "Opening Paystack…" : `Pay ${price} with Paystack`}
+              </button>
+            )}
           </form>
-          <p className="text-center text-xs text-ink-muted lg:text-[13px]">Card, bank transfer or USSD · secured by Paystack</p>
+          <p className="text-center text-xs text-ink-muted lg:text-[13px]">
+            {methods.transfers.length
+              ? `Pay ${price} by transfer from your ${methods.transfers.map((m) => m.name).join(" or ")} app. Your pass switches on as soon as you've sent it.`
+              : "Card, bank transfer or USSD · secured by Paystack"}
+          </p>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

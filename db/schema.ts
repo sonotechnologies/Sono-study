@@ -37,7 +37,11 @@ export const attemptStatus = pgEnum("attempt_status", ["in_progress", "submitted
 export const tutorRole = pgEnum("tutor_role", ["user", "assistant"]);
 export const jobStatus = pgEnum("job_status", ["queued", "running", "done", "failed"]);
 export const passProduct = pgEnum("pass_product", ["semester", "week"]);
-export const paymentStatus = pgEnum("payment_status", ["pending", "success", "failed"]);
+/**
+ * Transfers: pending (details shown) → claimed ("I've sent it": pass granted for 24h while we
+ * look for the money) → success. failed = rejected by an admin; expired = claimed but never found.
+ */
+export const paymentStatus = pgEnum("payment_status", ["pending", "claimed", "success", "failed", "expired"]);
 
 // ── Schools & courses ────────────────────────────────────────────────────────
 
@@ -654,9 +658,41 @@ export const payments = pgTable(
     amountKobo: integer("amount_kobo").notNull(),
     status: paymentStatus("status").notNull().default("pending"),
     paidAt: ts("paid_at"),
+    /** paystack, or a transfer to Sono's opay / palmpay account. */
+    method: text("method").$type<PaymentMethod>().notNull().default("paystack"),
+    /** Transfers: short code the student puts in the transfer note, e.g. "SONO-K3F7Q2". */
+    code: text("code").unique(),
+    /** Transfers: exact amount to send (price + a few naira unique to this payment), for matching. */
+    transferAmountKobo: integer("transfer_amount_kobo"),
+    claimedAt: ts("claimed_at"),
+    /** How it was confirmed: paystack, alert (forwarded notification) or admin. */
+    confirmedBy: text("confirmed_by"),
     createdAt: createdAt(),
   },
-  (t) => [index("payments_user_idx").on(t.userId)],
+  (t) => [index("payments_user_idx").on(t.userId), index("payments_transfer_idx").on(t.method, t.transferAmountKobo)],
+);
+
+export type PaymentMethod = "paystack" | "opay" | "palmpay";
+
+/** Credit alerts forwarded from the phone that has Sono's OPay / PalmPay apps (see lib/transfers.ts). */
+export const paymentAlerts = pgTable(
+  "payment_alerts",
+  {
+    id: id(),
+    /** opay, palmpay, or unknown when the app couldn't be told from the text. */
+    source: text("source").notNull(),
+    title: text("title"),
+    text: text("text").notNull(),
+    isCredit: boolean("is_credit").notNull(),
+    amountKobo: integer("amount_kobo"),
+    senderName: text("sender_name"),
+    code: text("code"),
+    paymentId: text("payment_id").references(() => payments.id, { onDelete: "set null" }),
+    /** The same notification forwarded twice is stored once. */
+    dedupeKey: text("dedupe_key").notNull().unique(),
+    receivedAt: ts("received_at").notNull().defaultNow(),
+  },
+  (t) => [index("payment_alerts_received_idx").on(t.receivedAt)],
 );
 
 // ── Notifications and abuse limits ───────────────────────────────────────────
@@ -676,7 +712,7 @@ export const pushSubscriptions = pgTable(
   (t) => [index("push_subscriptions_user_idx").on(t.userId)],
 );
 
-export type PushKind = "upload_ready" | "daily_reminder" | "streak" | "challenge";
+export type PushKind = "upload_ready" | "daily_reminder" | "streak" | "challenge" | "payment";
 
 /** One row per notification sent, so each reminder goes out once (e.g. key = the Lagos date). */
 export const pushLog = pgTable(
@@ -725,6 +761,7 @@ export type User = typeof users.$inferSelect;
 export type Course = typeof courses.$inferSelect;
 export type Challenge = typeof challenges.$inferSelect;
 export type Payment = typeof payments.$inferSelect;
+export type PaymentAlert = typeof paymentAlerts.$inferSelect;
 export type School = typeof schools.$inferSelect;
 export type MockAttempt = typeof mockAttempts.$inferSelect;
 export type Question = typeof questions.$inferSelect;

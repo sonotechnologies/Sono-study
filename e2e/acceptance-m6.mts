@@ -190,7 +190,7 @@ const visitor = await (await browser.newContext({ viewport: { width: 390, height
 visitor.on("pageerror", (e) => errors.push(e.message));
 await visitor.goto(B + "/", { waitUntil: "networkidle" });
 const landing = await visitor.locator("body").innerText();
-if (/Upload your notes\. Practise like the real CBT\./.test(landing) && /₦500/.test(landing) && /₦2,000/.test(landing) && /2 uploads a day/.test(landing)) log("landing page shows the hero and pricing from lib/plans (₦0 · ₦500 · ₦2,000)");
+if (/Upload your notes\. Practise like the real CBT\./.test(landing) && /₦500/.test(landing) && /OPay or PalmPay/.test(landing) && /₦2,000/.test(landing) && /2 uploads a day/.test(landing)) log("landing page shows the hero and pricing from lib/plans (₦0 · ₦500 · ₦2,000)");
 else fail("landing page content");
 await visitor.screenshot({ path: path.join(SHOTS ?? S, "m6-landing.png"), fullPage: true });
 

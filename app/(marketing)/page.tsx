@@ -35,7 +35,7 @@ const FAQ = [
   ["Are the questions like the real exam?", "Mocks use your own notes plus shared banks from your school, in the same A–E, timed format as campus CBT centres."],
   ["Does it work without data?", "Yes. Once a mock has opened, you can finish it with no connection. Your answers are saved on the phone and sync when you reconnect."],
   ["Who sees my uploads?", "Your files are only ever visible to you. If you leave “Share with your class” on, the questions made from them join your class bank; turn it off and they stay yours."],
-  ["Is it a subscription?", "No. Passes are one-off payments through Paystack and never auto-renew."],
+  ["Is it a subscription?", "No. A pass is a one-off transfer from your OPay or PalmPay app, and it never auto-renews."],
   ["Can I study anonymously?", "Yes. Pick a handle or appear as an anonymous animal on leaderboards."],
 ] as const;
 
@@ -172,7 +172,7 @@ export default async function Landing() {
               best
             />
           </div>
-          <span className="text-center text-[14px] text-ink-muted">Pay with card, bank transfer or USSD via Paystack.</span>
+          <span className="text-center text-[14px] text-ink-muted">Pay by transfer from your OPay or PalmPay app. Your pass switches on straight away.</span>
         </section>
 
         <section id="faq" className={cn(SECTION, "grid scroll-mt-4 gap-8 lg:grid-cols-[1fr_2fr] lg:gap-16")}>

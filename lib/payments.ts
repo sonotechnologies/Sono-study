@@ -24,13 +24,15 @@ export type ApplyResult =
 /**
  * Marks a payment successful and extends the user's Pro time. Idempotent:
  * the callback redirect and the webhook can both arrive; only the first one
- * that flips pending → success extends proUntil.
+ * that flips to success extends proUntil. A claimed transfer already has its
+ * pass (granted when the student tapped "I've sent it"), so it is only confirmed.
  */
 export async function applySuccessfulPayment(
   db: Db,
   reference: string,
   paidAmountKobo: number,
   now: Date = new Date(),
+  confirmedBy = "paystack",
 ): Promise<ApplyResult> {
   return db.transaction(async (tx) => {
     const [payment] = await tx.select().from(payments).where(eq(payments.reference, reference)).for("update");
@@ -41,13 +43,14 @@ export async function applySuccessfulPayment(
     if (payment.status === "success") {
       return { ok: true, payment, proUntil: user.proUntil ?? now, alreadyApplied: true } as const;
     }
-    const proUntil = extendProUntil(user.proUntil, payment.product, now);
+    const granted = payment.status === "claimed";
+    const proUntil = granted ? (user.proUntil ?? now) : extendProUntil(user.proUntil, payment.product, now);
     const [updated] = await tx
       .update(payments)
-      .set({ status: "success", paidAt: now })
+      .set({ status: "success", paidAt: now, confirmedBy })
       .where(and(eq(payments.id, payment.id), eq(payments.status, payment.status)))
       .returning();
-    await tx.update(users).set({ proUntil, plan: "pro" }).where(eq(users.id, payment.userId));
+    if (!granted) await tx.update(users).set({ proUntil, plan: "pro" }).where(eq(users.id, payment.userId));
     return { ok: true, payment: updated, proUntil, alreadyApplied: false } as const;
   });
 }

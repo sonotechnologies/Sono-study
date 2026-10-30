@@ -17,7 +17,8 @@
     "e2e:m3": "tsx e2e/acceptance-m3.mts",
     "e2e:m4": "tsx e2e/acceptance-m4.mts",
     "e2e:m5": "tsx e2e/acceptance-m5.mts",
-    "e2e:m6": "tsx e2e/acceptance-m6.mts"
+    "e2e:m6": "tsx e2e/acceptance-m6.mts",
+    "e2e:pay": "tsx e2e/acceptance-transfer.mts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",

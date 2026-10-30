@@ -20,6 +20,7 @@ import { anonymousName } from "@/lib/identity";
 import { PASSES, planSummary } from "@/lib/plans";
 import { vapidPublicKey } from "@/lib/push";
 import { openReportCount } from "@/lib/reports";
+import { transferQueue } from "@/lib/transfers";
 import { requireViewer } from "@/lib/viewer";
 
 export const metadata: Metadata = { title: "Profile" };
@@ -157,6 +158,10 @@ export default async function ProfilePage() {
               <Link href="/admin/reports" className={ROW}>
                 <span>Reported questions</span>
                 <span className={VALUE}>{await openReportCount(await getDb())} open</span>
+              </Link>
+              <Link href="/admin/payments" className={ROW}>
+                <span>Transfers</span>
+                <span className={VALUE}>{(await transferQueue(await getDb())).waiting.length} waiting</span>
               </Link>
             </Group>
           )}
