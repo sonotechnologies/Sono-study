@@ -129,12 +129,15 @@ const bisi = await student();
 const b = await openTransfer(bisi, "PalmPay");
 await bisi.getByRole("button", { name: `I've sent ₦${b.amount}` }).click();
 await bisi.getByRole("heading", { name: "Your Week Pass is on." }).waitFor({ timeout: 15_000 });
-const odd = await (await alert({ app: "com.transsnet.palmpay", text: "Received ₦2,450.00 from MAMA CHI" })).json();
+// Plain text with the key and app in the URL, the simplest thing a forwarder app can send.
+const odd = await (
+  await fetch(`${B}/api/payments/alert?key=${SECRET}&app=palmpay`, { method: "POST", headers: { "content-type": "text/plain" }, body: "Money In\nReceived ₦2,450.00 from MAMA CHI" })
+).json();
 const tolu = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
 tolu.on("pageerror", (e) => errors.push(e.message));
 await tolu.goto(B + "/admin/payments", { waitUntil: "networkidle" });
 const admin = await tolu.locator("main").innerText();
-if (odd.status === "unmatched" && admin.includes(b.code!) && /₦2,450 from MAMA CHI/.test(admin) && /Last alert from the phone/.test(admin))
+if (odd.status === "unmatched" && odd.source === "palmpay" && admin.includes(b.code!) && /₦2,450 from MAMA CHI/.test(admin) && /Last alert from the phone/.test(admin))
   log(`/admin/payments lists Bisi's unconfirmed ${b.code} and the unmatched ₦2,450 from MAMA CHI`);
 else fail(`admin page: ${admin.slice(0, 400)}`);
 if (SHOTS) await tolu.screenshot({ path: path.join(SHOTS, "pay-admin.png"), fullPage: true });

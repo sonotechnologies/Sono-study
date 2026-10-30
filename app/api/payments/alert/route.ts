@@ -30,7 +30,9 @@ async function readAlert(req: NextRequest): Promise<AlertInput | null> {
   else fields = { text: await req.text() };
   const text = pick(fields, "text", "message", "body", "content", "msg", "sms");
   if (!text?.trim()) return null;
-  return { app: pick(fields, "app", "package", "packageName", "from", "sender"), title: pick(fields, "title", "subject"), text: text.trim() };
+  // ?app=opay in the URL tells plain-text forwarders apart.
+  const app = pick(fields, "app", "package", "packageName", "from", "sender") ?? req.nextUrl.searchParams.get("app");
+  return { app, title: pick(fields, "title", "subject"), text: text.trim() };
 }
 
 /**

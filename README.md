@@ -27,6 +27,7 @@ npm run build && npm run e2e:m3   # Milestone 3 acceptance (upload → questions
 npm run build && npm run e2e:m4   # Milestone 4 acceptance (a classmate sees and practises shared questions)
 npm run build && npm run e2e:m5   # Milestone 5 acceptance (tutor cites the right page, refuses to invent)
 npm run build && npm run e2e:m6   # Milestone 6 acceptance (limit → Week Pass → limits lift; push, cron, landing)
+npm run build && npm run e2e:pay  # OPay / PalmPay transfer → pass on → forwarded alert confirms it
 npm run typecheck
 npm run lint
 ```
@@ -184,7 +185,13 @@ The engine in `lib/exam-engine` is ported from SonoCBT's exam runtime: `lib/exam
   - **Service-level tests:** in `tests/tutor.test.ts`, `tests/flashcards.test.ts` and `tests/theory.test.ts`. They also cover an AI reply that cites nothing being refused, classmates' notes, exam-in-progress refusals and the daily caps.
 
 **Milestone 6 — Social and monetisation** ✅ (designs 4a, 3a–3i, 6a–6e)
-- **Paystack passes:** Week Pass ₦500 (7 days) and Semester Pass ₦2,000 (150 days). Checkout goes through Paystack's transaction API. The callback verifies server-side, and the signed `charge.success` webhook (HMAC-SHA512) applies a payment exactly once. The plan is worked out from `proUntil`, so limits lift on the next request.
+- **OPay / PalmPay transfers (`lib/transfers.ts`), the default way to pay:**
+  - **Paying:** the student sends an exact amount (the price plus ₦1–₦10 unique to them) to Sono's account, with a code like `SONO-K3F7Q2` in the note. "I've sent it" switches the pass on for up to 24 hours.
+  - **Confirming:** an Android phone signed in to the OPay and PalmPay apps forwards each credit notification to `/api/payments/alert`. The code, or else the exact amount, finds the payment and confirms it with no admin step. Setup: [docs/setup.md](docs/setup.md#7-payments-opay-and-palmpay-transfers).
+  - **Unconfirmed claims** expire after 24 hours, and the pass is taken back; a late alert still confirms it. A student whose claim expired in the last 30 days waits for the money next time.
+  - **Admin:** `/admin/payments` lists unconfirmed claims, money that matched no one, and when the phone last forwarded anything.
+  - **Tested by** `tests/transfers.test.ts` and `npm run e2e:pay`.
+- **Paystack passes (optional, shown only when `PAYSTACK_SECRET_KEY` is set):** Week Pass ₦500 (7 days) and Semester Pass ₦2,000 (150 days). Checkout goes through Paystack's transaction API. The callback verifies server-side, and the signed `charge.success` webhook (HMAC-SHA512) applies a payment exactly once. The plan is worked out from `proUntil`, so limits lift on the next request.
 - **Weekly challenges (`lib/challenges.ts`):**
   - **Scheduling:** the cron worker schedules next Friday's challenge (18:00–22:00 Lagos, 20 questions in 15 minutes) for every course with at least 20 shared questions.
   - **Same paper for everyone:** each challenge gets a fixed question set, stored as a private bank, so questions added later don't change it.
@@ -211,6 +218,8 @@ The engine in `lib/exam-engine` is ported from SonoCBT's exam runtime: `lib/exam
   - **Also covered:** the Profile push switch, a push delivered to the service worker and shown, the cron (challenges scheduled, 401 without the secret), and the landing page.
   - **Service-level tests:** `tests/challenges.test.ts`, `tests/push.test.ts` (including real VAPID and aes128gcm requests to a local push endpoint) and `tests/rate-limit.test.ts`.
 
+**Setting up the real services:** step-by-step for every key (Neon, Google sign-in, Resend, Gemini, Groq, R2, cron, VAPID, OPay/PalmPay and the forwarding phone) is in [docs/setup.md](docs/setup.md).
+
 **Setting up AI and storage**
 1. **Gemini (required for real questions):** get a free key at aistudio.google.com and set `GEMINI_API_KEY`. `GEMINI_MODEL` takes a comma-separated fallback list. Check the current free-tier models and limits when you set it up, because they change often. `GEMINI_EMBED_MODEL` defaults to `gemini-embedding-001`.
 2. **Groq (optional fallback):** a free key from console.groq.com in `GROQ_API_KEY`. `GROQ_MODEL` is optional.
@@ -233,6 +242,8 @@ The engine in `lib/exam-engine` is ported from SonoCBT's exam runtime: `lib/exam
 | `/billing/callback`, `/api/paystack/webhook`, `/billing/success` | Verify payments server-side and extend `proUntil`. Passes stack, and a payment is applied only once. |
 | `/onboarding` | See Milestone 1 above. |
 | `/admin/reports` | Reported questions, for admins (`ADMIN_EMAILS`). Linked from Profile. |
+| `/billing/transfer/[reference]` | OPay / PalmPay transfer: account, exact amount, code, "I've sent it", then confirmation. |
+| `/admin/payments` | Transfers waiting for money, unmatched money in, forwarding-phone health. |
 | `/upload` | When today's uploads or AI questions are used up, shows the daily-limit state, with the invite link and WhatsApp share. |
 | `/i/[code]` | Invite links. The inviter is recorded when the new student signs up. |
 | `/dev/states` | Dev-only gallery of the queue, limit and payment states and the Home skeleton. |
@@ -254,7 +265,7 @@ The build brief is the source of truth for product rules:
 All six milestones in the brief are built, and each has an acceptance run (`npm run e2e:m2` … `e2e:m6`). Still to check with real keys:
 - **AI:** real questions from Gemini, with Groq as the fallback.
 - **Storage:** uploads to R2.
-- **Payments:** Paystack test mode (`E2E_PAYSTACK=real`).
+- **Payments:** a real transfer to the OPay and PalmPay accounts, forwarded by the phone. The notification wording is read leniently, but check the first real alert on Admin → Transfers.
 - **Push:** a real phone receiving reminders.
 
 Landing page differences from 4a:
