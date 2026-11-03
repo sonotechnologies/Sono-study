@@ -211,7 +211,7 @@ export function CardSession({ courseId, courseCode, cards, dueTotal }: { courseI
         {flipped ? (
           <div className="grid grid-cols-4 gap-2" role="group" aria-label="How well did you know it?">
             {BUTTONS.map((b, i) => (
-              <button key={b.rating} type="button" onClick={() => rate(b.rating)} aria-keyshortcuts={String(i + 1)} className={cn("flex h-16 flex-col items-center justify-center rounded-[12px] font-semibold", b.cls)}>
+              <button key={b.rating} type="button" onClick={() => rate(b.rating)} aria-keyshortcuts={String(i + 1)} className={cn("flex h-16 flex-col items-center justify-center rounded-[12px] font-semibold transition-transform duration-150 active:scale-[0.96] motion-reduce:active:scale-100", b.cls)}>
                 <span className="text-[15px]">{b.label}</span>
                 <span className="text-xs font-normal opacity-80">
                   {card.intervals[b.rating]}

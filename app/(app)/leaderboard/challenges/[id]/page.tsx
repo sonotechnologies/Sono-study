@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { and, eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { getDb } from "@/db";
 import { mockAttempts } from "@/db/schema";
 import { RewardLine } from "@/components/account/challenge-cards";
@@ -39,7 +39,7 @@ export default async function ChallengeResultPage({ params }: { params: Promise<
   const [mine] = await db
     .select({ id: mockAttempts.id })
     .from(mockAttempts)
-    .where(and(eq(mockAttempts.challengeId, challenge.id), eq(mockAttempts.userId, viewer.id), eq(mockAttempts.status, "submitted")));
+    .where(and(eq(mockAttempts.challengeId, challenge.id), eq(mockAttempts.userId, viewer.id), ne(mockAttempts.status, "in_progress")));
   const standings = me && !result.standings.some((r) => r.isViewer) ? [...result.standings, me] : result.standings;
   const stats = [
     ["Score", me ? `${me.score}/${me.maxScore}` : "—"],

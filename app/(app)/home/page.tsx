@@ -158,7 +158,7 @@ export default async function HomePage() {
                 </span>
               )}
               <div className="flex w-full flex-col gap-3 lg:mt-3 lg:flex-row lg:flex-wrap">
-                <ButtonLink href={`/courses/${focus.id}/mock?count=30`} size="lg" className="w-full lg:w-auto">
+                <ButtonLink href={`/courses/${focus.id}/mock?count=30`} size="lg" className="w-full whitespace-nowrap lg:w-auto">
                   Start 30-question mock
                 </ButtonLink>
                 {weak.length > 0 ? (

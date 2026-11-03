@@ -119,7 +119,8 @@ export function DailyLimitState({
   const whatsapp = `https://wa.me/?text=${encodeURIComponent(`I'm prepping for exams on Sono Study — upload notes, get CBT mocks. Join me: ${inviteLink}`)}`;
   const done = Math.min(referralsDone, REFERRAL.invitesNeeded);
   return (
-    <Shell variant={variant}>
+    // Under the page's top bar: no need for the extra top space.
+    <Shell variant={variant} className={variant === "screen" ? "pt-4 lg:pt-10" : undefined}>
       <div className="flex flex-col gap-2">
         <Headline variant={variant}>
           That&apos;s today&apos;s {limit} free {noun}.

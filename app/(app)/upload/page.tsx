@@ -47,6 +47,7 @@ export default async function UploadPage({
     const code = viewer.referralCode ?? viewer.handle ?? viewer.id;
     return (
       <main className="flex min-h-[calc(100dvh-64px)] flex-col lg:min-h-dvh">
+        <TopBar back="/home" heading="Upload notes" />
         <DailyLimitState
           variant="screen"
           action={blocked.action}

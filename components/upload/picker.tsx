@@ -233,6 +233,7 @@ export function UploadPicker({
       return setError(
         `That file is over ${Math.round(maxBytes / 1024 / 1024)} MB. Try a smaller export or photos.`,
       );
+    setMode("files");
     setDoc(file);
   }
 

@@ -51,14 +51,16 @@ export default async function CoursesPage({ searchParams }: { searchParams: Prom
               <Link href={`/courses/${c.id}`} className="flex min-h-[72px] items-center gap-4 px-4 py-3 hover:bg-surface-2 lg:px-5">
                 <Ring value={c.score} size={44} stroke={5} color={c.label ? MASTERY_COLOR[c.label] : undefined} />
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="font-display text-lg font-bold">{displayCourseCode(c.code)}</span>
-                  <span className="truncate text-[13px] text-ink-muted">{c.title}</span>
-                </span>
-                <span className="flex flex-col items-end gap-0.5 text-right">
-                  <span className="text-[13px]" style={{ color: c.label ? MASTERY_COLOR[c.label] : "var(--ink-muted)" }}>
-                    {pct === null ? (c.questions ? "not started" : "no questions yet") : `${pct}% · ${c.label}`}
+                  <span className="flex items-baseline gap-2">
+                    <span className="flex-none whitespace-nowrap font-display text-lg font-bold">{displayCourseCode(c.code)}</span>
+                    <span className="min-w-0 truncate text-[13px] text-ink-muted">{c.title}</span>
                   </span>
-                  {countdown && <span className={cn("text-[13px]", soon ? "font-semibold text-flag" : "text-ink-muted")}>{countdown}</span>}
+                  <span className="flex flex-wrap gap-x-2 text-[13px]">
+                    <span style={{ color: c.label ? MASTERY_COLOR[c.label] : "var(--ink-muted)" }}>
+                      {pct === null ? (c.questions ? "not started" : "no questions yet") : `${pct}% · ${c.label}`}
+                    </span>
+                    {countdown && <span className={cn(soon ? "font-semibold text-flag" : "text-ink-muted")}>· {countdown}</span>}
+                  </span>
                 </span>
                 <ChevronRight size={20} className="text-ink-muted" aria-hidden />
               </Link>

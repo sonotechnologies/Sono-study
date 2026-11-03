@@ -141,7 +141,7 @@ if (odd.status === "unmatched" && odd.source === "palmpay" && admin.includes(b.c
   log(`/admin/payments lists Bisi's unconfirmed ${b.code} and the unmatched ₦2,450 from MAMA CHI`);
 else fail(`admin page: ${admin.slice(0, 400)}`);
 if (SHOTS) await tolu.screenshot({ path: path.join(SHOTS, "pay-admin.png"), fullPage: true });
-await tolu.getByRole("listitem").filter({ hasText: b.code! }).getByRole("button", { name: /reject/ }).click();
+await tolu.getByRole("listitem").filter({ hasText: b.code! }).getByRole("button", { name: /^Reject$/ }).click();
 await tolu.waitForLoadState("networkidle");
 await bisi.goto(B + "/upload", { waitUntil: "networkidle" });
 const bisiLimits = (await bisi.locator("main").innerText()).match(/(\d+) of (\d+) uploads/);
