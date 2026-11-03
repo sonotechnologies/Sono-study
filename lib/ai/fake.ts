@@ -159,8 +159,16 @@ export function fakeProvider(name = "fake"): AiProvider {
             reply = { answer: "Your notes don't cover that yet. Upload the notes for this topic and ask again.", citedChunkIds: [], notInNotes: true };
           } else {
             const sentence = sentencesOf(best.c.text).sort((a, b) => overlap(q, words(b)) - overlap(q, words(a)))[0] ?? best.c.text.slice(0, 200);
-            const lead = ctx.instruction ? `${ctx.instruction.replace(/\.$/, "")}: ` : "";
-            reply = { answer: `${lead}${sentence}`, citedChunkIds: [best.c.id], notInNotes: false };
+            const term = keyTerm(sentence);
+            const others = [...new Set(sentencesOf(ctx.chunks.map((c) => c.text).join("\n")).map(keyTerm).filter((t): t is string => !!t && t !== term))];
+            if (ctx.instruction?.startsWith("Ask me one short multiple-choice") && term && others.length >= 2) {
+              // Quiz: the sentence with its key term blanked, and three options, as the real prompt asks.
+              const opts = [term, others[0], others[1]].sort((a, b) => hash(a) - hash(b));
+              reply = { answer: `Fill the gap: ${blank(sentence, term)}\n${opts.map((o, i) => `${"ABC"[i]}) ${o}`).join("\n")}`, citedChunkIds: [best.c.id], notInNotes: false };
+            } else {
+              const lead = ctx.instruction ? `${ctx.instruction.replace(/\.$/, "")}: ` : "";
+              reply = { answer: `${lead}${sentence}`, citedChunkIds: [best.c.id], notInNotes: false };
+            }
           }
           break;
         }

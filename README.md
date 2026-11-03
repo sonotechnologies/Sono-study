@@ -268,10 +268,12 @@ All six milestones in the brief are built, and each has an acceptance run (`npm 
 - **Payments:** a real transfer to the OPay and PalmPay accounts, forwarded by the phone. The notification wording is read leniently, but check the first real alert on Admin → Transfers.
 - **Push:** a real phone receiving reminders.
 
+Legal: the Privacy Policy (`/privacy`, written for the NDPA 2023) and Terms of Use (`/terms`) are linked from the landing page, sign-in and Profile. They're a plain-English draft based on what the app actually does: have a lawyer review them, and update them when you add providers or change refunds.
+
 Landing page differences from 4a:
 - **Hero badge:** it says "Courses ready for 30+ Nigerian universities", not "Used by students at 40+…", because there are no users yet.
 - **School row:** short school names, not logos.
-- **Footer:** links only to Contact, since there are no Privacy or Terms pages yet.
+- **Footer:** Privacy, Terms and Contact.
 
 **Local testing tips** (demo mode):
 - `/courses/<id>/mock?quick=1` adds a 1-minute timer for trying auto-submit.

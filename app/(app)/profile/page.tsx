@@ -148,6 +148,14 @@ export default async function ProfilePage() {
               <span>Export my data</span>
               <span className={VALUE}>JSON file</span>
             </a>
+            <Link href="/privacy" className={ROW}>
+              <span>Privacy Policy</span>
+              <span className={VALUE}>How we use your data</span>
+            </Link>
+            <Link href="/terms" className={ROW}>
+              <span>Terms of Use</span>
+              <span className={VALUE}>Passes, uploads, fair use</span>
+            </Link>
             <ThemeRow theme={theme} />
             {authEnabled && <SignOutRow />}
             <DeleteAccountRow />

@@ -428,7 +428,7 @@ export const generateChunk: Handler = async (db, job) => {
     if (skipAi) throw new AiError("Skipped to save AI quota.", "invalid");
     const res = u.isPastPaper
       ? await ai.extractPastQuestions(db, { course, text: chunk.text, label: chunk.label ?? "", max: n, knownTopics })
-      : await ai.generateQuestions(db, { course, text: chunk.text, label: chunk.label ?? "", questionCount: n, flashcardCount: flashcardTarget(chunk.text, n), theoryCount: n > 0 ? 1 : 0, knownTopics });
+      : await ai.generateQuestions(db, { course, text: chunk.text, label: chunk.label ?? "", questionCount: n, flashcardCount: u.cardsOnly ? Math.min(20, Math.max(8, Math.round(chunk.text.length / 250))) : flashcardTarget(chunk.text, n), theoryCount: n > 0 ? 1 : 0, knownTopics });
     set = res.value;
     provider = res.provider;
   } catch (err) {
