@@ -66,13 +66,13 @@ function makeQuestions(input: GenerateInput): GeneratedSet {
       const at = hash(f.term + i) % 4;
       const options = [...distractors];
       options.splice(at, 0, f.term);
-      questions.push({ type: "single", topic, stem: `Complete the statement: "${blank(f.s, f.term)}"`, options, correct: [at], answer: "", explanation: why, difficulty });
+      questions.push({ type: "single", topic, stem: `Complete the statement: "${blank(f.s, f.term)}"`, options, correct: [at], answer: "", answerText: f.term, explanation: why, difficulty, evidence: f.s });
     } else if (kind === "true_false") {
       const truth = hash(f.s) % 2 === 0 || !others.length;
       const swapped = truth ? f.s : f.s.replace(new RegExp(`\\b${f.term}\\b`), others[hash(f.term) % others.length]);
-      questions.push({ type: "true_false", topic, stem: `True or false: ${swapped}`, options: [], correct: [], answer: truth ? "True" : "False", explanation: why, difficulty });
+      questions.push({ type: "true_false", topic, stem: `True or false: ${swapped}`, options: [], correct: [], answer: truth ? "True" : "False", answerText: "", explanation: why, difficulty, evidence: f.s });
     } else {
-      questions.push({ type: "fill_in", topic, stem: `Fill in the gap: ${blank(f.s, f.term)}`, options: [], correct: [], answer: f.term, explanation: why, difficulty });
+      questions.push({ type: "fill_in", topic, stem: `Fill in the gap: ${blank(f.s, f.term)}`, options: [], correct: [], answer: f.term, answerText: "", explanation: why, difficulty, evidence: f.s });
     }
   }
   const flashcards = facts.slice(0, input.flashcardCount).map((f) => ({ front: blank(f.s, f.term), back: f.term, topic }));
@@ -96,7 +96,7 @@ function parsePaper(input: PastPaperInput): GeneratedSet {
     const options = parts.slice(1).map((o) => o.replace(/\s+/g, " ").trim()).filter(Boolean);
     if (stem.length < 8 || options.length < 2) continue;
     const longest = options.reduce((bi, o, i) => (o.length > options[bi].length ? i : bi), 0);
-    questions.push({ type: "single", topic, stem, options, correct: [longest], answer: "", explanation: "Offline test provider: answer not checked.", difficulty: "medium" });
+    questions.push({ type: "single", topic, stem, options, correct: [longest], answer: "", answerText: "", explanation: "Offline test provider: answer not checked.", difficulty: "medium", evidence: "" });
     if (questions.length >= input.max) break;
   }
   return { topic, questions, flashcards: [], theory: [] };
@@ -179,18 +179,15 @@ export function fakeProvider(name = "fake"): AiProvider {
         }
         case "grade_theory": {
           const ctx = req.context as { rubric: RubricPoint[]; answer: string };
-          const a = words(ctx.answer);
-          const covered = ctx.rubric.filter((r) => {
+          const sentences = ctx.answer.split(/(?<=[.!?])\s+/).filter(Boolean);
+          const points = ctx.rubric.map((r, i) => {
             const p = words(r.point);
-            return p.size > 0 && overlap(p, a) / p.size >= 0.5;
+            const best = sentences.map((s) => ({ s, n: overlap(p, words(s)) })).sort((a, b) => b.n - a.n)[0];
+            const made = !!best && p.size > 0 && overlap(p, words(ctx.answer)) / p.size >= 0.5;
+            return { n: i + 1, awarded: made ? r.marks : 0, evidence: made ? best.s : "" };
           });
-          const missed = ctx.rubric.filter((r) => !covered.includes(r));
-          reply = {
-            score: covered.reduce((s, r) => s + r.marks, 0),
-            covered: covered.map((r) => r.point),
-            missed: missed.map((r) => r.point),
-            tip: missed.length ? `Add a point on: ${missed[0].point}` : "Well covered. Tighten your wording for full marks.",
-          };
+          const missed = ctx.rubric.filter((_, i) => !points[i].awarded);
+          reply = { points, tip: missed.length ? `Add a point on: ${missed[0].point}` : "Well covered. Tighten your wording for full marks." };
           break;
         }
       }

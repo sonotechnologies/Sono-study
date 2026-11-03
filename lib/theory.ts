@@ -6,6 +6,7 @@ import { displayCourseCode } from "@/lib/format";
 import type { PlanName } from "@/lib/plans";
 import { getUsage, recordUsage } from "@/lib/usage";
 import { verdictFor } from "./theory-copy";
+import { overlapScore, terms } from "./tutor";
 
 /**
  * Theory/essay grading (brief §8). Each theory question carries a marking guide
@@ -77,9 +78,14 @@ export async function ensureRubric(db: Db, questionId: string): Promise<Rubric> 
     .where(eq(questions.id, questionId));
   if (!q) throw new TheoryError("Question not found.", "invalid");
   if (q.q.rubric?.length) return q.q.rubric;
-  // Notes it came from, for a guide that matches the course.
+  // The parts of the notes it came from that best match the question, for a guide that fits.
   const notes = q.q.sourceUploadId
-    ? (await db.select({ text: chunks.text }).from(chunks).where(eq(chunks.uploadId, q.q.sourceUploadId)).orderBy(asc(chunks.position)).limit(2)).map((c) => c.text).join("\n\n")
+    ? (await db.select({ text: chunks.text }).from(chunks).where(eq(chunks.uploadId, q.q.sourceUploadId)).orderBy(asc(chunks.position)).limit(40))
+        .map((c) => ({ text: c.text, score: overlapScore(terms(q.q.stem), c.text) }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 2)
+        .map((c) => c.text)
+        .join("\n\n") || null
     : null;
   const { value } = await ai.generateRubric(db, { course: { code: displayCourseCode(q.code), title: q.title }, question: q.q.stem, marks: DEFAULT_MARKS, notes });
   const rubric = value.rubric.map((r) => ({ point: r.point.trim().slice(0, 300), marks: r.marks }));
@@ -110,7 +116,8 @@ export async function gradeAnswer(
   let graded;
   try {
     const rubric = await ensureRubric(db, questionId);
-    graded = (await ai.gradeTheory(db, { question: q.q.stem, rubric, answer })).value;
+    const model = q.q.answer.kind === "theory" ? q.q.answer.modelAnswer : null;
+    graded = (await ai.gradeTheory(db, { question: q.q.stem, rubric, answer, modelAnswer: model })).value;
   } catch (err) {
     if (err instanceof TheoryError) throw err;
     if (err instanceof AiError) throw new TheoryError("Grading is very busy right now. Your answer is still here; try again in a minute.", "busy");
