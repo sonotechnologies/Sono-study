@@ -100,12 +100,30 @@ function put(
       xhr.status >= 200 && xhr.status < 300
         ? resolve()
         : reject(new Error(`Upload failed (${xhr.status}).`));
+    // No response at all: offline, or the storage server refused the browser (CORS).
     xhr.onerror = () =>
       reject(
-        new Error("Your connection dropped. Try again when you have signal."),
+        new BlockedError(
+          navigator.onLine
+            ? "The upload couldn't reach our storage. Try again in a moment."
+            : "Your connection dropped. Try again when you have signal.",
+        ),
       );
     xhr.send(body);
   });
+}
+
+class BlockedError extends Error {}
+
+/** Straight to storage; if that's blocked (not a server "no"), the same file through Sono's server. */
+async function putWithRelay(t: { url: string; headers: Record<string, string>; relay?: string }, body: Blob, onProgress: (loaded: number) => void) {
+  try {
+    await put(t.url, t.headers, body, onProgress);
+  } catch (err) {
+    if (!(err instanceof BlockedError) || !t.relay || body.size > 4 * 1024 * 1024) throw err;
+    onProgress(0);
+    await put(t.relay, t.headers, body, onProgress);
+  }
 }
 
 export function UploadPicker({
@@ -263,7 +281,7 @@ export function UploadPicker({
       // One at a time: on a weak connection parallel uploads just fight each other.
       for (let i = 0; i < blobs.length; i++) {
         const t = prep.targets[i];
-        await put(t.url, t.headers, blobs[i].blob, (loaded) => {
+        await putWithRelay(t, blobs[i].blob, (loaded) => {
           sent[i] = loaded;
           setBusy({
             label: sending(i),
@@ -501,7 +519,7 @@ export function UploadPicker({
                   {doc.name}
                 </span>
                 <span className="text-[13px] text-ink-muted">
-                  {(doc.size / 1024 / 1024).toFixed(1)} MB · tap to change
+                  {doc.size >= 1024 * 1024 ? `${(doc.size / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(doc.size / 1024))} KB`} · tap to change
                 </span>
               </span>
             ) : (
