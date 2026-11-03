@@ -1,7 +1,7 @@
 /** Compact authoring format for the sample question bank (brief: 300 sample questions, doubles as a demo). */
 export type BankQuestion =
-  | { t: "single"; topic: string; d: 1 | 2 | 3; stem: string; options: string[]; correct: number; why: string; past?: boolean }
-  | { t: "multiple"; topic: string; d: 1 | 2 | 3; stem: string; options: string[]; correct: number[]; why: string }
+  | { t: "single"; topic: string; d: 1 | 2 | 3; stem: string; options: string[]; correct: number; why: string; past?: boolean; keepOrder?: boolean }
+  | { t: "multiple"; topic: string; d: 1 | 2 | 3; stem: string; options: string[]; correct: number[]; why: string; keepOrder?: boolean }
   | { t: "true_false"; topic: string; d: 1 | 2 | 3; stem: string; correct: boolean; why: string }
   | { t: "fill_in"; topic: string; d: 1 | 2 | 3; stem: string; accepted: string[]; why: string };
 

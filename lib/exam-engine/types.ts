@@ -29,6 +29,8 @@ export type QuestionSnapshot = {
   topicName: string | null;
   sourceLabel: string | null;
   isPastQuestion: boolean;
+  /** Options shown in the paper's order (they refer to each other, e.g. "Both A and C"). */
+  keepOrder?: boolean;
 };
 
 export type AttemptResponse =

@@ -72,6 +72,12 @@ describe("answer keys", () => {
     expect(toBankQuestion(q({ explanation: "Option A is correct because collective nouns take a singular verb." }), "x")).toMatchObject({ why: "because collective nouns take a singular verb." });
   });
 
+  it("keeps a past paper's 'Both A and C' options, in the paper's order", () => {
+    const paper = q({ options: ["is", "are", "Both A and B", "be"], answerText: "Both A and B", correct: [2] });
+    expect(toBankQuestion(paper, "x", true)).toMatchObject({ t: "single", correct: 2, keepOrder: true });
+    expect(toBankQuestion(paper, "x")).toBeNull(); // generated: rejected
+  });
+
   it("flags low-confidence past-paper answers", () => {
     expect(toBankQuestion(q({ confidence: "low" }), "x", true)).toMatchObject({ why: expect.stringMatching(/^AI-worked answer, check with your lecturer:/) });
   });

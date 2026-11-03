@@ -198,6 +198,8 @@ export const uploads = pgTable(
     questionsMade: integer("questions_made").notNull().default(0),
     flashcardsMade: integer("flashcards_made").notNull().default(0),
     isPastPaper: boolean("is_past_paper").notNull().default(false),
+    /** "Flashcards only": no questions are made, so the day's AI-question allowance isn't used. */
+    cardsOnly: boolean("cards_only").notNull().default(false),
     /** Same file seen before: its questions and chunks were reused, no AI spent. */
     reusedFromId: text("reused_from_id"),
     xpEarned: integer("xp_earned").notNull().default(0),
@@ -266,6 +268,8 @@ export const questions = pgTable(
     difficulty: integer("difficulty").notNull().default(2),
     rubric: jsonb("rubric").$type<{ point: string; marks: number }[]>(),
     isPastQuestion: boolean("is_past_question").notNull().default(false),
+    /** Past-paper options that refer to each other ("Both A and C") keep the paper's order: never shuffled. */
+    keepOptionOrder: boolean("keep_option_order").notNull().default(false),
     visibility: visibility("visibility").notNull().default("shared"),
     upvotes: integer("upvotes").notNull().default(0),
     reports: integer("reports").notNull().default(0),
@@ -519,8 +523,10 @@ export const tutorMessages = pgTable("tutor_messages", {
   citedChunkIds: text("cited_chunk_ids").array().notNull().default(sql`'{}'::text[]`),
   /** What the citation chips show ("Week 3 slides · p.12"), kept with the message. */
   citations: jsonb("citations").$type<TutorCitation[]>().notNull().default([]),
+  /** Free-text question + the passages it was answered from: classmates asking the same thing reuse the answer. */
+  cacheKey: text("cache_key"),
   createdAt: createdAt(),
-});
+}, (t) => [index("tutor_messages_cache_idx").on(t.cacheKey)]);
 
 export const theoryAttempts = pgTable("theory_attempts", {
   id: id(),

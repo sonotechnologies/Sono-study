@@ -158,6 +158,7 @@ export function UploadPicker({
   const filesRef = useRef<HTMLInputElement>(null);
   const [source, setSource] = useState<"camera" | "gallery">("camera");
   const [dragging, setDragging] = useState(false);
+  const [cardsOnly, setCardsOnly] = useState(false);
 
   /** Desktop drop zone: photos join the photo list, a document is picked as the file. */
   function onDrop(e: React.DragEvent) {
@@ -265,7 +266,7 @@ export function UploadPicker({
         })),
       );
 
-      const prep = await prepareUploadAction({ courseId, contribute, files });
+      const prep = await prepareUploadAction({ courseId, contribute, cardsOnly, files });
       if (!prep.ok) {
         if (prep.code === "limit" || prep.code === "ai_limit")
           return router.refresh();
@@ -532,6 +533,7 @@ export function UploadPicker({
           </button>
         )}
 
+        <div className="grid gap-3 lg:grid-cols-2">
         <label className="flex flex-col gap-1.5">
           <span className="text-[13px] text-ink-muted">Course</span>
           <span className="relative">
@@ -553,6 +555,30 @@ export function UploadPicker({
             />
           </span>
         </label>
+          <fieldset className="flex flex-col gap-1.5">
+            <legend className="pb-1.5 text-[13px] text-ink-muted">Make</legend>
+            <div className="grid h-[52px] grid-cols-2 gap-1 rounded-[12px] bg-surface-2 p-1">
+              {(
+                [
+                  [false, "Questions + cards"],
+                  [true, "Flashcards only"],
+                ] as const
+              ).map(([value, label]) => (
+                <label
+                  key={label}
+                  className={cn(
+                    "grid cursor-pointer place-items-center rounded-[9px] text-sm font-semibold has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent",
+                    cardsOnly === value ? "bg-surface text-ink" : "text-ink-muted",
+                  )}
+                >
+                  <input type="radio" name="make" className="sr-only" checked={cardsOnly === value} onChange={() => setCardsOnly(value)} />
+                  {label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        </div>
+        {cardsOnly && <p className="-mt-2 text-[13px] text-ink-muted">Flashcards only don&apos;t use your daily AI questions.</p>}
 
         <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-3.5">
           <label htmlFor="contribute" className="flex flex-1 flex-col gap-1">
@@ -560,7 +586,7 @@ export function UploadPicker({
               Share with your class
             </span>
             <span className="text-[13px] leading-normal text-ink-muted">
-              Questions (not your {mode === "camera" ? "photos" : "file"}) join
+              {cardsOnly ? "Cards" : "Questions"} (not your {mode === "camera" ? "photos" : "file"}) join
               the {code} bank{schoolName ? ` for ${schoolName}` : ""}. You earn
               +50 XP when classmates use them.
             </span>
@@ -585,7 +611,7 @@ export function UploadPicker({
           onClick={submit}
           className={buttonClass("primary", "lg", "w-full")}
         >
-          Make questions
+          {cardsOnly ? "Make flashcards" : "Make questions"}
         </button>
       </div>
     </div>

@@ -200,7 +200,7 @@ export async function extractPastQuestions(ai: AiProvider, input: PastPaperInput
         text: `${courseLine(input.course)}
 The text below is from a past exam paper (${input.label}). Transcribe up to ${input.max} of its objective questions exactly as written:
 do not rephrase, merge, solve in the stem or invent questions. Keep the options in the paper's order, without their letters.
-- Skip a question that depends on a diagram, passage or table you cannot see, and any whose options refer to each other by letter ("Both A and C").
+- Skip a question that depends on a diagram, passage or table you cannot see. Keep options that refer to each other ("Both A and C", "All of the above") exactly as written: those questions are shown in the paper's order.
 - Work out the correct answer, copy its text into "answerText", and explain it in at most 40 words without option letters. Set "confidence" to "low" if you are not sure; "evidence" may be empty.
 - Transcribe essay/theory questions into "theory", each with a marking guide (3–5 checkable points, whole marks, 6–10 in total) and a model answer.
 - Give each a short topic. ${topicHint(input.knownTopics)} Also write up to 10 flashcards on the key facts the paper tests.
@@ -440,7 +440,9 @@ export function toBankQuestion(q: GeneratedQuestion, fallbackTopic: string, past
       if (options.length < 2 || options.length > 6 || options.some((o) => !o)) return null;
       if (!past && q.type === "single" && options.length < 4) return null;
       if (new Set(options.map((o) => o.toLowerCase())).size !== options.length) return null;
-      if (options.some((o) => LETTER_REF.test(o))) return null;
+      // Options that point at other options only work in a fixed order: past papers keep it, generated questions are dropped.
+      const keepOrder = options.some((o) => LETTER_REF.test(o));
+      if (keepOrder && !past) return null;
       let correct = [...new Set(q.correct)].filter((i) => i >= 0 && i < options.length);
       if (!correct.length || correct.length !== new Set(q.correct).size) return null;
       // Cross-check the index against the answer text (off-by-one keys are the commonest AI slip).
@@ -454,10 +456,10 @@ export function toBankQuestion(q: GeneratedQuestion, fallbackTopic: string, past
         }
       }
       if (q.type === "single" || correct.length === 1) {
-        return { t: "single", topic, d, stem, options, correct: correct[0], why, ...(past ? { past: true } : {}) };
+        return { t: "single", topic, d, stem, options, correct: correct[0], why, ...(past ? { past: true } : {}), ...(keepOrder ? { keepOrder: true } : {}) };
       }
       if (correct.length === options.length) return null;
-      return { t: "multiple", topic, d, stem, options, correct: correct.sort((a, b) => a - b), why };
+      return { t: "multiple", topic, d, stem, options, correct: correct.sort((a, b) => a - b), why, ...(keepOrder ? { keepOrder: true } : {}) };
     }
     case "true_false": {
       const a = clean(q.answer).toLowerCase();

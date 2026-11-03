@@ -1,4 +1,5 @@
-import { and, cosineDistance, desc, eq, isNotNull, ne, or } from "drizzle-orm";
+import { createHash } from "node:crypto";
+import { and, cosineDistance, desc, eq, gt, isNotNull, ne, or } from "drizzle-orm";
 import type { Db } from "@/db";
 import { chunks, courses, mockAttempts, tutorMessages, uploads, type TutorCitation } from "@/db/schema";
 import { ai, AiError } from "@/lib/ai";
@@ -119,7 +120,10 @@ export class TutorError extends Error {
 }
 
 export const QUICK_ACTIONS = {
-  quiz: { label: "Quiz me on this", instruction: "Ask me one short exam-style question on this, from my notes, and wait for my answer." },
+  quiz: {
+    label: "Quiz me on this",
+    instruction: 'Ask me one short multiple-choice exam question on this, from my notes: the question, then three options on their own lines written "A) …", "B) …", "C) …". Don\'t give the answer; wait for mine.',
+  },
   simpler: { label: "Explain simpler", instruction: "Explain your last answer more simply, in plain words, from my notes." },
   example: { label: "Give an example", instruction: "Give one concrete example of this, using my notes." },
 } as const;
@@ -135,7 +139,15 @@ export function isExamInProgressRequest(text: string): boolean {
 
 const notInNotes = (code: string) => `Your ${code} notes don't cover that, so I won't guess. Upload the notes for that topic, or ask about something in them.`;
 
-export type TutorReply = { id: string; content: string; citations: TutorCitation[]; notInNotes: boolean; declined: boolean };
+export type TutorReply = { id: string; content: string; citations: TutorCitation[]; notInNotes: boolean; declined: boolean; cached?: boolean };
+
+/** How long an answer can be reused for the same question on the same passages. */
+const CACHE_DAYS = 7;
+/** Same course, same question (ignoring case and punctuation), same passages → same answer. */
+export function tutorCacheKey(courseId: string, question: string, passageIds: string[]): string {
+  const q = question.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  return createHash("sha256").update(`${courseId}|${q}|${[...passageIds].sort().join(",")}`).digest("hex");
+}
 
 export async function askTutor(
   db: Db,
@@ -163,11 +175,11 @@ export async function askTutor(
   if (!text) throw new TutorError("Type a question.", "invalid");
   if (action && !lastAnswer) throw new TutorError("Ask a question first.", "invalid");
 
-  const save = async (reply: Omit<TutorReply, "id">, cited: string[]) => {
+  const save = async (reply: Omit<TutorReply, "id">, cited: string[], cacheKey: string | null = null) => {
     await db.insert(tutorMessages).values({ userId: viewer.id, courseId, role: "user", content: text, createdAt: now });
     const [row] = await db
       .insert(tutorMessages)
-      .values({ userId: viewer.id, courseId, role: "assistant", content: reply.content, citedChunkIds: cited, citations: reply.citations, createdAt: new Date(now.getTime() + 1) })
+      .values({ userId: viewer.id, courseId, role: "assistant", content: reply.content, citedChunkIds: cited, citations: reply.citations, cacheKey, createdAt: new Date(now.getTime() + 1) })
       .returning({ id: tutorMessages.id });
     return { id: row.id, ...reply };
   };
@@ -203,6 +215,34 @@ export async function askTutor(
   const passages = await retrieve(db, viewer.id, courseId, query, TOP_PASSAGES, prefer);
   if (!passages.length) return save({ content: notInNotes(code), citations: [], notInNotes: true, declined: false }, []);
 
+  const byId = new Map(passages.map((p) => [p.id, p]));
+  const citationsFor = (cited: string[]): TutorCitation[] =>
+    cited.map((id) => {
+      const p = byId.get(id)!;
+      const quote = p.text.replace(/\s+/g, " ").trim();
+      return {
+        id,
+        label: p.own ? p.label : p.label.replace(/^.*? · /, "Classmate's notes · "),
+        uploadId: p.uploadId,
+        page: p.page,
+        own: p.own,
+        quote: quote.length > 280 ? `${quote.slice(0, 277).replace(/\s+\S*$/, "")}…` : quote,
+      };
+    });
+
+  // A standalone question a classmate already asked on the same passages: reuse that answer (free).
+  const cacheKey = !action && !shortFollowUp && text.split(/\s+/).length >= 3 ? tutorCacheKey(courseId, text, passages.map((p) => p.id)) : null;
+  if (cacheKey) {
+    const [hit] = await db
+      .select({ content: tutorMessages.content, cited: tutorMessages.citedChunkIds })
+      .from(tutorMessages)
+      .where(and(eq(tutorMessages.cacheKey, cacheKey), eq(tutorMessages.role, "assistant"), gt(tutorMessages.createdAt, new Date(now.getTime() - CACHE_DAYS * 86_400_000))))
+      .orderBy(desc(tutorMessages.createdAt))
+      .limit(1);
+    const cited = hit?.cited.filter((id) => byId.has(id)) ?? [];
+    if (hit && cited.length) return save({ content: hit.content, citations: citationsFor(cited), notInNotes: false, declined: false, cached: true }, cited, cacheKey);
+  }
+
   let reply;
   try {
     reply = (
@@ -225,7 +265,6 @@ export async function askTutor(
   }
   await recordUsage(db, viewer.id, "tutor_message", 1, now);
 
-  const byId = new Map(passages.map((p) => [p.id, p]));
   const cited = [...new Set(reply.citedChunkIds)].filter((id) => byId.has(id));
   // An answer that isn't backed by the notes it was given is not an answer from the notes.
   // …and a cited answer must share real terms with what it cites.
@@ -233,19 +272,7 @@ export async function askTutor(
   if (reply.notInNotes || cited.length === 0 || overlapScore(terms(reply.answer), citedText) < 2) {
     return save({ content: notInNotes(code), citations: [], notInNotes: true, declined: false }, []);
   }
-  const citations: TutorCitation[] = cited.map((id) => {
-    const p = byId.get(id)!;
-    const quote = p.text.replace(/\s+/g, " ").trim();
-    return {
-      id,
-      label: p.own ? p.label : p.label.replace(/^.*? · /, "Classmate's notes · "),
-      uploadId: p.uploadId,
-      page: p.page,
-      own: p.own,
-      quote: quote.length > 280 ? `${quote.slice(0, 277).replace(/\s+\S*$/, "")}…` : quote,
-    };
-  });
-  return save({ content: reply.answer.trim(), citations, notInNotes: false, declined: false }, cited);
+  return save({ content: reply.answer.trim(), citations: citationsFor(cited), notInNotes: false, declined: false }, cited, cacheKey);
 }
 
 export async function tutorHistory(db: Db, userId: string, courseId: string, limit = 40) {
