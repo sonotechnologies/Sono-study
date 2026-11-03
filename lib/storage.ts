@@ -30,11 +30,15 @@ export function isUploadMime(type: string): type is UploadMime {
 export class StorageError extends Error {}
 
 function r2() {
-  const { R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET } = process.env;
-  if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_BUCKET) return null;
+  // Trimmed: a stray space or newline pasted into a dashboard breaks every signed URL.
+  const v = (k: string) => process.env[k]?.trim() || "";
+  const [account, keyId, secret, bucket] = [v("R2_ACCOUNT_ID"), v("R2_ACCESS_KEY_ID"), v("R2_SECRET_ACCESS_KEY"), v("R2_BUCKET")];
+  if (!account || !keyId || !secret || !bucket) return null;
+  // R2_ENDPOINT for buckets in a jurisdiction, e.g. https://<account>.eu.r2.cloudflarestorage.com
+  const host = (v("R2_ENDPOINT") || `https://${account}.r2.cloudflarestorage.com`).replace(/\/+$/, "");
   return {
-    client: new AwsClient({ accessKeyId: R2_ACCESS_KEY_ID, secretAccessKey: R2_SECRET_ACCESS_KEY, service: "s3", region: "auto" }),
-    endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${R2_BUCKET}`,
+    client: new AwsClient({ accessKeyId: keyId, secretAccessKey: secret, service: "s3", region: "auto" }),
+    endpoint: `${host}/${bucket}`,
   };
 }
 
@@ -71,6 +75,13 @@ function localSignature(key: string, contentType: string, exp: number) {
   return createHmac("sha256", localSecret()).update(`${key}\n${contentType}\n${exp}`).digest("hex");
 }
 
+/** A PUT to /api/uploads/local, signed by us: stores the body locally, or forwards it to R2. */
+function relayUrl(key: string, contentType: string) {
+  const exp = Math.floor(Date.now() / 1000) + SIGNED_URL_TTL_SEC;
+  const q = new URLSearchParams({ key, exp: String(exp), sig: localSignature(key, contentType, exp) });
+  return `/api/uploads/local?${q}`;
+}
+
 export function verifyLocalSignature(key: string, contentType: string, exp: number, sig: string, now = Date.now()): boolean {
   if (!KEY.test(key) || !Number.isFinite(exp) || exp * 1000 < now) return false;
   const want = Buffer.from(localSignature(key, contentType, exp));
@@ -82,6 +93,11 @@ export interface SignedPut {
   key: string;
   url: string;
   headers: Record<string, string>;
+  /**
+   * Same upload through Sono's own server, used when the direct upload to R2 is blocked
+   * (usually the bucket's CORS rule). Small files only: hosts cap request bodies (~4.5 MB on Vercel).
+   */
+  relay?: string;
 }
 
 /** A short-lived URL the phone PUTs the file to. */
@@ -94,12 +110,10 @@ export async function signedPutUrl(key: string, contentType: string): Promise<Si
     const signed = await remote.client.sign(new Request(url, { method: "PUT", headers: { "Content-Type": contentType } }), {
       aws: { signQuery: true, allHeaders: true },
     });
-    return { key, url: signed.url, headers: { "Content-Type": contentType } };
+    return { key, url: signed.url, headers: { "Content-Type": contentType }, relay: relayUrl(key, contentType) };
   }
   if (storageMode() === "none") throw new StorageError("File storage isn't set up yet.");
-  const exp = Math.floor(Date.now() / 1000) + SIGNED_URL_TTL_SEC;
-  const q = new URLSearchParams({ key, exp: String(exp), sig: localSignature(key, contentType, exp) });
-  return { key, url: `/api/uploads/local?${q}`, headers: { "Content-Type": contentType } };
+  return { key, url: relayUrl(key, contentType), headers: { "Content-Type": contentType } };
 }
 
 /** A short-lived link for the owner to open their own file ("Read next"). Null without R2 (dev streams it instead). */
