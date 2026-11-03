@@ -88,3 +88,14 @@ export function tooLittleText(pages: Page[]): boolean {
   const chars = pages.reduce((s, p) => s + p.text.replace(/\s/g, "").length, 0);
   return chars < Math.max(200, pages.length * 40);
 }
+
+/**
+ * Removes personal details students' notes and past papers often carry (phone numbers, emails,
+ * matric numbers) before any text is stored or sent to an AI provider (NDPA).
+ */
+export function redactPersonal(text: string): string {
+  return text
+    .replace(/\b[\w.+-]+@[\w-]+(\.[\w-]+)+\b/g, "[email]")
+    .replace(/(?<!\d)(\+?234[\s-]?|0)[789][01]\d[\s-]?\d{3}[\s-]?\d{4}(?!\d)/g, "[phone]")
+    .replace(/\b[A-Z]{2,4}\/\d{2,4}\/\d{2,6}\b/g, "[matric no.]");
+}

@@ -139,7 +139,6 @@ export async function withAi<T>(db: Db, need: Capability, fn: (p: AiProvider) =>
 export const ai = {
   generateQuestions: (db: Db, input: tasks.GenerateInput) => withAi(db, "text", (p) => tasks.generateQuestions(p, input)),
   extractPastQuestions: (db: Db, input: tasks.PastPaperInput) => withAi(db, "text", (p) => tasks.extractPastQuestions(p, input)),
-  generateFlashcards: (db: Db, input: Parameters<typeof tasks.generateFlashcards>[1]) => withAi(db, "text", (p) => tasks.generateFlashcards(p, input)),
   readImage: (db: Db, input: Parameters<typeof tasks.readImage>[1]) => withAi(db, "vision", (p) => tasks.readImage(p, input)),
   answerFromNotes: (db: Db, input: Parameters<typeof tasks.answerFromNotes>[1]) => withAi(db, "text", (p) => tasks.answerFromNotes(p, input)),
   gradeTheory: (db: Db, input: Parameters<typeof tasks.gradeTheory>[1]) => withAi(db, "text", (p) => tasks.gradeTheory(p, input)),

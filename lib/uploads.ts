@@ -9,8 +9,8 @@ import { looksLikePastPaper, toBankQuestion, type GeneratedSet, type Photo } fro
 import { effectivePlan } from "@/lib/billing";
 import { displayCourseCode } from "@/lib/format";
 import { chunkPages, flashcardTarget, questionTargets } from "@/lib/ingest/chunk";
-import { extractDocument, ExtractError, tooLittleText, type Page } from "@/lib/ingest/extract";
-import { headingOf, matchTopic, tidyTopic } from "@/lib/ingest/topics";
+import { extractDocument, ExtractError, redactPersonal, tooLittleText, type Page } from "@/lib/ingest/extract";
+import { headingOf, matchTopic, normaliseForCompare, similarity, tidyTopic } from "@/lib/ingest/topics";
 import { enqueue, jobsAhead, RetryLater, runJobs, type Handler, type Job, type JobType } from "@/lib/jobs";
 import { MAX_PHOTOS, MAX_UPLOAD_BYTES, PLANS, UPLOAD_XP } from "@/lib/plans";
 import { notifyUploadReady } from "@/lib/push";
@@ -283,7 +283,8 @@ const PHOTO_BATCH = 4;
 
 async function readPhotos(db: Db, keys: string[], course: { code: string; title: string }, onProgress: (done: number) => Promise<void>) {
   const pages: Page[] = [];
-  let pastPaper = false;
+  let pastBatches = 0;
+  let batches = 0;
   for (let i = 0; i < keys.length; i += PHOTO_BATCH) {
     const batch: Photo[] = [];
     for (const key of keys.slice(i, i + PHOTO_BATCH)) {
@@ -293,11 +294,13 @@ async function readPhotos(db: Db, keys: string[], course: { code: string; title:
       batch.push({ mimeType: ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg", base64: Buffer.from(bytes).toString("base64") });
     }
     const { value } = await ai.readImage(db, { course, photos: batch });
-    if (value.kind === "past_paper") pastPaper = true;
+    batches++;
+    if (value.kind === "past_paper") pastBatches++;
     value.pages.forEach((p, j) => pages.push({ n: i + j + 1, label: `photo ${i + j + 1}`, text: p.text }));
     await onProgress(Math.min(keys.length, i + PHOTO_BATCH));
   }
-  return { pages, pastPaper };
+  // One tutorial sheet among notes shouldn't switch the whole upload to transcribing a paper.
+  return { pages, pastPaper: pastBatches * 2 > batches };
 }
 
 export const ingestUpload: Handler = async (db, job) => {
@@ -359,6 +362,7 @@ export const ingestUpload: Handler = async (db, job) => {
         );
       }
     }
+    pages = pages.map((p) => ({ ...p, text: redactPersonal(p.text) }));
     const text = pages.map((p) => p.text).join("\n");
     if (!pastPaper) pastPaper = looksLikePastPaper(text);
 
@@ -434,11 +438,38 @@ export const generateChunk: Handler = async (db, job) => {
   const visibility = u.visibility === "contribute" ? ("shared" as const) : ("private" as const);
   const sourceLabel = `${u.title} · ${chunk.label ?? ""}`.replace(/ · $/, "");
   const seen = new Set((await db.select({ stem: questions.stem }).from(questions).where(eq(questions.sourceUploadId, u.id))).map((q) => q.stem.toLowerCase()));
+  // Questions already in the class bank: a near-duplicate stays in this upload but isn't shared again.
+  const sharedStems = (
+    await db
+      .select({ stem: questions.stem })
+      .from(questions)
+      .where(and(eq(questions.courseId, u.courseId), ne(questions.type, "theory"), eq(questions.status, "active"), eq(questions.visibility, "shared")))
+      .orderBy(desc(questions.createdAt))
+      .limit(600)
+  ).map((q) => q.stem);
+  const chunkText = normaliseForCompare(chunk.text);
+  const chunkWords = new Set(chunkText.split(" "));
+  /** The quote is in the notes: verbatim, or at least 85% of its meaningful words (models tweak a word or two). */
+  const grounded = (evidence: string) => {
+    const e = normaliseForCompare(evidence);
+    if (chunkText.includes(e)) return true;
+    const ws = e.split(" ").filter((w) => w.length >= 4);
+    return ws.length >= 3 && ws.filter((w) => chunkWords.has(w)).length / ws.length >= 0.85;
+  };
+  /** The question's own page, if the model named a marker that is really in this chunk ("p.3", "slide 4"). */
+  const pageLabel = (page: string | null | undefined) => {
+    const p = page?.trim().replace(/^\[|\]$/g, "");
+    return p && (chunk.text.includes(`[${p}]`) || p === chunk.label) ? p : null;
+  };
 
   const qRows: (typeof questions.$inferInsert)[] = [];
   for (const g of set.questions.slice(0, n)) {
     const bank = toBankQuestion(g, chunkTopic, u.isPastPaper);
     if (!bank || seen.has(bank.stem.toLowerCase())) continue;
+    // Grounding: the quoted evidence must really be in the notes (calculations and past papers excepted).
+    const calc = g.difficulty === "hard" && /\d/.test(g.stem);
+    if (!u.isPastPaper && !calc && g.evidence.trim() && !grounded(g.evidence)) continue;
+    const repeat = visibility === "shared" && sharedStems.some((s) => similarity(s, bank.stem) >= 0.85);
     let row;
     try {
       row = toRow(bank, "generated");
@@ -446,6 +477,8 @@ export const generateChunk: Handler = async (db, job) => {
       continue;
     }
     seen.add(bank.stem.toLowerCase());
+    if (visibility === "shared" && !repeat) sharedStems.push(bank.stem);
+    const own = pageLabel(g.page);
     qRows.push({
       courseId: u.courseId,
       topicId: await topicIdFor(bank.topic),
@@ -454,9 +487,9 @@ export const generateChunk: Handler = async (db, job) => {
       stem: bank.stem,
       explanation: bank.why,
       difficulty: bank.d,
-      sourceLabel,
+      sourceLabel: own ? `${u.title} · ${own}` : sourceLabel,
       isPastQuestion: u.isPastPaper,
-      visibility,
+      visibility: repeat ? "private" : visibility,
     });
   }
   const fRows: (typeof flashcards.$inferInsert)[] = [];

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, ChevronDown, FileText, Plus, X } from "lucide-react";
+import { Camera, ChevronDown, FileText, Image as ImageIcon, Plus, X } from "lucide-react";
 import { confirmUploadAction, prepareUploadAction } from "@/app/(app)/upload/actions";
 import { Switch } from "@/components/ui/switch";
 import { buttonClass } from "@/components/ui/primitives";
@@ -12,8 +12,9 @@ import { ProgressCard } from "./progress-card";
 type Course = { id: string; label: string };
 type Photo = { id: string; file: File; url: string };
 
+/** Files also takes photos: students often look for gallery pictures there. */
 const DOC_ACCEPT =
-  ".pdf,.pptx,.docx,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  "image/*,.pdf,.pptx,.docx,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 const DOC_TYPES: Record<string, string> = {
   pdf: "application/pdf",
   pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
@@ -31,10 +32,15 @@ async function sha256(blob: Blob): Promise<string> {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-/** Phone photos are 3–5 MB; 1600px JPEG keeps text readable at a fraction of the data. */
+const READABLE = new Set(["image/jpeg", "image/png", "image/webp"]);
+
+/**
+ * Phone photos are 3–5 MB (gallery pictures often more); a 1600px JPEG keeps text readable at
+ * a fraction of the data, and turns any format the phone can open (HEIC on iPhone) into JPEG.
+ */
 async function shrinkPhoto(file: File): Promise<Blob> {
   try {
-    const bitmap = await createImageBitmap(file);
+    const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
     const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
     if (scale === 1 && file.type === "image/jpeg" && file.size < 900_000) return file;
     const canvas = document.createElement("canvas");
@@ -44,7 +50,9 @@ async function shrinkPhoto(file: File): Promise<Blob> {
     bitmap.close();
     return await new Promise<Blob>((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("encode"))), "image/jpeg", 0.82));
   } catch {
-    return file;
+    // The phone can't open it (e.g. HEIC on most Android phones): only send it if we can read it.
+    if (READABLE.has(file.type)) return file;
+    throw new Error(`"${file.name}" is in a format we can't read. Take a screenshot of it, or set your camera to save JPEG ("Most compatible"), and add that instead.`);
   }
 }
 
@@ -84,7 +92,9 @@ export function UploadPicker({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<null | { label: string; sent: number; total: number }>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
   const filesRef = useRef<HTMLInputElement>(null);
+  const [source, setSource] = useState<"camera" | "gallery">("camera");
   const photosRef = useRef(photos);
 
   useEffect(() => {
@@ -115,6 +125,13 @@ export function UploadPicker({
 
   function pickDoc(list: FileList | null) {
     setError(null);
+    const images = [...(list ?? [])].filter((f) => f.type.startsWith("image/"));
+    if (images.length) {
+      // Photos picked under Files: treat them as photos of pages.
+      setMode("camera");
+      setSource("gallery");
+      return addPhotos(list);
+    }
     const file = list?.[0];
     if (!file) return;
     if (!Object.values(DOC_TYPES).includes(docType(file))) return setError("Use a PDF, PowerPoint (.pptx) or Word (.docx) file. For .ppt or .doc, save as the newer format first.");
@@ -174,37 +191,46 @@ export function UploadPicker({
   return (
     <div className="flex flex-1 flex-col">
       <div className="flex flex-1 flex-col gap-[18px] px-5 pt-1 pb-5 lg:px-0">
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-3 gap-2.5">
           {(
             [
-              ["camera", Camera, "Camera", "Snap several pages"],
+              ["camera", Camera, "Camera", "Snap pages now"],
+              ["gallery", ImageIcon, "Gallery", "Photos on your phone"],
               ["files", FileText, "Files", "PDF, PPT, DOCX"],
             ] as const
-          ).map(([m, Icon, label, hint]) => (
-            <button
-              key={m}
-              type="button"
-              aria-pressed={mode === m}
-              onClick={() => {
-                setMode(m);
-                setError(null);
-                (m === "camera" ? cameraRef : filesRef).current?.click();
-              }}
-              className={cn(
-                "flex h-24 flex-col justify-between rounded-2xl border p-3.5 text-left",
-                mode === m ? "border-accent bg-accent-soft" : "border-border bg-surface",
-              )}
-            >
-              <Icon size={22} className={mode === m ? "text-accent" : "text-ink-muted"} aria-hidden />
-              <span className="flex flex-col">
-                <span className="text-[15px] font-semibold">{label}</span>
-                <span className="text-xs text-ink-muted">{hint}</span>
-              </span>
-            </button>
-          ))}
+          ).map(([m, Icon, label, hint]) => {
+            const on = m === "files" ? mode === "files" : mode === "camera" && source === m;
+            return (
+              <button
+                key={m}
+                type="button"
+                aria-pressed={on}
+                onClick={() => {
+                  setError(null);
+                  if (m === "files") {
+                    setMode("files");
+                    filesRef.current?.click();
+                  } else {
+                    setMode("camera");
+                    setSource(m);
+                    (m === "camera" ? cameraRef : galleryRef).current?.click();
+                  }
+                }}
+                className={cn("flex h-24 flex-col justify-between rounded-2xl border p-3 text-left", on ? "border-accent bg-accent-soft" : "border-border bg-surface")}
+              >
+                <Icon size={22} className={on ? "text-accent" : "text-ink-muted"} aria-hidden />
+                <span className="flex min-w-0 flex-col">
+                  <span className="text-[15px] font-semibold">{label}</span>
+                  <span className="text-xs leading-tight text-ink-muted">{hint}</span>
+                </span>
+              </button>
+            );
+          })}
         </div>
+        {/* Camera opens the camera straight away; Gallery has no `capture`, so the phone offers its photos. */}
         <input ref={cameraRef} type="file" accept="image/*" capture="environment" multiple hidden onChange={(e) => (addPhotos(e.target.files), (e.target.value = ""))} />
-        <input ref={filesRef} type="file" accept={DOC_ACCEPT} hidden onChange={(e) => (pickDoc(e.target.files), (e.target.value = ""))} />
+        <input ref={galleryRef} type="file" accept="image/*" multiple hidden onChange={(e) => (addPhotos(e.target.files), (e.target.value = ""))} />
+        <input ref={filesRef} type="file" accept={DOC_ACCEPT} multiple hidden onChange={(e) => (pickDoc(e.target.files), (e.target.value = ""))} />
 
         {mode === "camera" && photos.length > 0 && (
           <div className="flex flex-col gap-2">
@@ -213,9 +239,14 @@ export function UploadPicker({
                 {photos.length} photo{photos.length === 1 ? "" : "s"} selected
               </span>
               {photos.length < maxPhotos && (
-                <button type="button" onClick={() => cameraRef.current?.click()} className="flex h-9 items-center gap-1 font-semibold text-accent">
-                  <Plus size={16} aria-hidden /> Add more
-                </button>
+                <span className="flex gap-3">
+                  <button type="button" onClick={() => cameraRef.current?.click()} className="flex h-11 items-center gap-1 font-semibold text-accent">
+                    <Plus size={16} aria-hidden /> Camera
+                  </button>
+                  <button type="button" onClick={() => galleryRef.current?.click()} className="flex h-11 items-center gap-1 font-semibold text-accent">
+                    <Plus size={16} aria-hidden /> Gallery
+                  </button>
+                </span>
               )}
             </div>
             <ol className="grid grid-cols-4 gap-1.5">
@@ -238,8 +269,12 @@ export function UploadPicker({
           </div>
         )}
         {mode === "camera" && photos.length === 0 && (
-          <button type="button" onClick={() => cameraRef.current?.click()} className="rounded-2xl border border-dashed border-border px-4 py-6 text-center text-sm text-ink-muted">
-            Take a photo of each page of your notes or past questions, in order. Up to {Math.min(maxPhotos, pagesPerUpload)} pages.
+          <button
+            type="button"
+            onClick={() => (source === "camera" ? cameraRef : galleryRef).current?.click()}
+            className="rounded-2xl border border-dashed border-border px-4 py-6 text-center text-sm text-ink-muted"
+          >
+            {source === "camera" ? "Take a photo of each page" : "Choose photos of the pages"} of your notes or past questions, in order. Up to {Math.min(maxPhotos, pagesPerUpload)} pages.
           </button>
         )}
         {mode === "files" && (

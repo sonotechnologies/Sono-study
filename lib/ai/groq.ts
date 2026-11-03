@@ -41,38 +41,50 @@ export function groqProvider(apiKey: string, model?: string, opts: Options = {})
       const content = req.parts.map((p) =>
         "text" in p ? { type: "text", text: p.text } : { type: "image_url", image_url: { url: `data:${p.image.mimeType};base64,${p.image.base64}` } },
       );
-      const body = JSON.stringify({
-        model: hasImage ? opts.visionModel : textModel,
-        temperature: req.temperature ?? 0.2,
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content: `${req.system}\n\nReply with one JSON object only, matching this JSON Schema:\n${JSON.stringify(toJsonSchema(req.schema))}`,
-          },
-          { role: "user", content: hasImage ? content : content.map((c) => (c as { text: string }).text).join("\n\n") },
-        ],
-      });
+      const user = hasImage ? content : content.map((c) => (c as { text: string }).text).join("\n\n");
+      const body = (fix: string | null) =>
+        JSON.stringify({
+          model: hasImage ? opts.visionModel : textModel,
+          temperature: req.temperature ?? 0.2,
+          response_format: { type: "json_object" },
+          messages: [
+            {
+              role: "system",
+              content: `${req.system}\n\nReply with one JSON object only, matching this JSON Schema:\n${JSON.stringify(toJsonSchema(req.schema))}`,
+            },
+            { role: "user", content: user },
+            ...(fix ? [{ role: "user", content: fix }] : []),
+          ],
+        });
 
       let lastError = "The AI reply couldn't be read.";
+      let fix: string | null = null;
       for (let attempt = 0; attempt < 2; attempt++) {
         const res = await http(ENDPOINT, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-          body,
+          body: body(fix),
         }).catch(() => null);
         if (!res) throw new AiError("Couldn't reach Groq.", "busy", 30_000);
         if (res.status === 429) throw new AiError("Groq free-tier limit reached.", "limit", retryAfter(res));
         if (res.status >= 500) throw new AiError("Groq is very busy right now.", "busy", 30_000);
-        const json = (await res.json().catch(() => ({}))) as { choices?: { message?: { content?: string } }[]; error?: { message?: string } };
+        const json = (await res.json().catch(() => ({}))) as { choices?: { message?: { content?: string } }[]; error?: { message?: string; code?: string } };
+        // JSON mode rejects a reply that isn't valid JSON with a 400: that's a bad reply, not a refusal.
+        if (res.status === 400 && json.error?.code === "json_validate_failed") {
+          lastError = "The AI reply wasn't valid JSON.";
+          fix = "Your last reply wasn't valid JSON. Reply again with one valid JSON object only.";
+          continue;
+        }
         if (!res.ok) throw new AiError(`Groq refused the request: ${json.error?.message ?? res.status}`, "failed");
         const text = json.choices?.[0]?.message?.content ?? "";
         try {
           const parsed = req.parse.safeParse(JSON.parse(text));
           if (parsed.success) return parsed.data;
           lastError = "The AI reply was missing some fields.";
+          fix = `Your last reply failed validation: ${parsed.error.issues.slice(0, 3).map((i) => `${i.path.join(".")}: ${i.message}`).join("; ")}. Reply again with valid JSON only.`;
         } catch {
           lastError = "The AI reply wasn't valid JSON.";
+          fix = "Your last reply wasn't valid JSON. Reply again with one valid JSON object only.";
         }
       }
       throw new AiError(lastError, "invalid");

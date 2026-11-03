@@ -52,7 +52,8 @@ function readable(userId: string, courseId: string) {
   return and(eq(uploads.courseId, courseId), eq(uploads.status, "ready"), or(eq(uploads.userId, userId), eq(uploads.visibility, "contribute")));
 }
 
-export async function retrieve(db: Db, userId: string, courseId: string, query: string, k = TOP_PASSAGES): Promise<Passage[]> {
+/** `prefer`: passage ids to rank first (the pages the last answer cited, for follow-ups). */
+export async function retrieve(db: Db, userId: string, courseId: string, query: string, k = TOP_PASSAGES, prefer: ReadonlySet<string> = new Set()): Promise<Passage[]> {
   const q = terms(query);
   const base = db
     .select({ id: chunks.id, text: chunks.text, label: chunks.label, page: chunks.page, uploadId: uploads.id, title: uploads.title, owner: uploads.userId })
@@ -98,7 +99,7 @@ export async function retrieve(db: Db, userId: string, courseId: string, query: 
         label: `${c.title} · ${p.label}`,
         page: p.page,
         text: p.text,
-        score: overlapScore(q, p.text) * 2 + (CANDIDATE_CHUNKS - rank) * 0.1 + (c.owner === userId ? 0.05 : 0),
+        score: overlapScore(q, p.text) * 2 + (CANDIDATE_CHUNKS - rank) * 0.1 + (c.owner === userId ? 0.05 : 0) + (prefer.has(`${c.id}:${p.page ?? 0}`) ? 100 : 0),
       });
     }
   });
@@ -124,7 +125,8 @@ export const QUICK_ACTIONS = {
 } as const;
 export type QuickAction = keyof typeof QUICK_ACTIONS;
 
-const EXAM_NOW = /\b(i'?m|i am|we'?re|currently|right now)\b.{0,30}\b(in|writing|taking|sitting|doing)\b.{0,25}\b(exam|test|cbt|quiz)\b|\bexam (is )?(going on|ongoing|in progress)\b|\b(answer|solve)\b.{0,20}\bbefore (time|the time) (is )?up\b/i;
+const EXAM_NOW =
+  /\b(i'?m|i am|we'?re|currently|right now)\b.{0,30}\b(in|writing|taking|sitting|doing)\b.{0,25}\b(exam|test|cbt|quiz)\b|\bexam (is )?(going on|ongoing|in progress)\b|\b(answer|solve)\b.{0,20}\bbefore (time|the time) (is )?up\b|\b(exam hall|invigilator|cbt (centre|center))\b|\bi dey (write|do|sit)\b|\b(exam|test|cbt) (don|has) start(ed)?\b/i;
 
 /** The brief's "no cheating tools": declined while a timed mock is running, or when asked for help mid-exam. */
 export function isExamInProgressRequest(text: string): boolean {
@@ -150,9 +152,12 @@ export async function askTutor(
     .from(tutorMessages)
     .where(and(eq(tutorMessages.userId, viewer.id), eq(tutorMessages.courseId, courseId)))
     .orderBy(desc(tutorMessages.createdAt))
-    .limit(2);
+    .limit(8);
   const lastAnswer = history.find((m) => m.role === "assistant");
   const lastQuestion = history.find((m) => m.role === "user");
+  // What the conversation is about: the latest real question (quick actions save their label).
+  const labels = new Set<string>(Object.values(QUICK_ACTIONS).map((a) => a.label));
+  const topicQuery = history.find((m) => m.role === "user" && !labels.has(m.content))?.content ?? null;
   const action = input.action && QUICK_ACTIONS[input.action] ? input.action : null;
   const text = (action ? QUICK_ACTIONS[action].label : (input.text ?? "")).trim().slice(0, 1000);
   if (!text) throw new TutorError("Type a question.", "invalid");
@@ -190,8 +195,12 @@ export async function askTutor(
   const usage = await getUsage(db, viewer.id, "tutor_message", viewer.effectivePlan, now);
   if (usage.remaining <= 0) throw new TutorError(`You've used today's ${usage.limit} tutor messages.`, "limit");
 
-  const query = action && lastQuestion ? lastQuestion.content : text;
-  const passages = await retrieve(db, viewer.id, courseId, query);
+  // Quick actions and short follow-ups ("why?", a one-word quiz answer) search on the topic too,
+  // with the pages the last answer cited ranked first.
+  const shortFollowUp = !action && !!topicQuery && text.split(/\s+/).length < 8;
+  const query = action ? (topicQuery ?? text) : shortFollowUp ? `${topicQuery} ${text}` : text;
+  const prefer = new Set<string>(action || shortFollowUp ? (lastAnswer?.citedChunkIds ?? []) : []);
+  const passages = await retrieve(db, viewer.id, courseId, query, TOP_PASSAGES, prefer);
   if (!passages.length) return save({ content: notInNotes(code), citations: [], notInNotes: true, declined: false }, []);
 
   let reply;
@@ -219,7 +228,11 @@ export async function askTutor(
   const byId = new Map(passages.map((p) => [p.id, p]));
   const cited = [...new Set(reply.citedChunkIds)].filter((id) => byId.has(id));
   // An answer that isn't backed by the notes it was given is not an answer from the notes.
-  if (reply.notInNotes || cited.length === 0) return save({ content: notInNotes(code), citations: [], notInNotes: true, declined: false }, []);
+  // …and a cited answer must share real terms with what it cites.
+  const citedText = cited.map((id) => byId.get(id)!.text).join("\n");
+  if (reply.notInNotes || cited.length === 0 || overlapScore(terms(reply.answer), citedText) < 2) {
+    return save({ content: notInNotes(code), citations: [], notInNotes: true, declined: false }, []);
+  }
   const citations: TutorCitation[] = cited.map((id) => {
     const p = byId.get(id)!;
     return { id, label: p.own ? p.label : p.label.replace(/^.*? · /, "Classmate's notes · "), uploadId: p.uploadId, page: p.page, own: p.own };

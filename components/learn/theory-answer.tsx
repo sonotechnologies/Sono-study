@@ -133,8 +133,8 @@ export function TheoryAnswer({
           <div className="flex flex-col gap-1.5">
             <h3 className="text-[13px] text-ink-muted">Covered</h3>
             <ul className="flex flex-col gap-1.5">
-              {f.covered.map((p) => (
-                <li key={p} className="flex gap-2 text-[15px] leading-snug">
+              {f.covered.map((p, i) => (
+                <li key={i} className="flex gap-2 text-[15px] leading-snug">
                   <Check size={18} className="mt-0.5 flex-none text-correct" aria-hidden />
                   {p}
                 </li>
@@ -146,8 +146,8 @@ export function TheoryAnswer({
           <div className="flex flex-col gap-1.5">
             <h3 className="text-[13px] text-ink-muted">Missed</h3>
             <ul className="flex flex-col gap-1.5">
-              {f.missed.map((p) => (
-                <li key={p} className="flex gap-2 text-[15px] leading-snug">
+              {f.missed.map((p, i) => (
+                <li key={i} className="flex gap-2 text-[15px] leading-snug">
                   <X size={18} className="mt-0.5 flex-none text-wrong" aria-hidden />
                   {p}
                 </li>

@@ -73,7 +73,7 @@ describe("Groq adapter", () => {
 });
 
 describe("generated questions", () => {
-  const base: GeneratedQuestion = { type: "single", topic: "Concord", stem: "Which verb agrees with 'The team'?", options: ["A. is", "B. are", "C. were", "D. be"], correct: [0], answer: "", explanation: "Collective nouns acting as one take a singular verb.", difficulty: "medium" };
+  const base: GeneratedQuestion = { type: "single", topic: "Concord", stem: "Which verb agrees with 'The team'?", options: ["A. is", "B. are", "C. were", "D. be"], correct: [0], answer: "", explanation: "Collective nouns acting as one take a singular verb.", difficulty: "medium", answerText: "", evidence: "" };
 
   it("keeps good questions and strips option letters", () => {
     expect(toBankQuestion(base, "x")).toMatchObject({ t: "single", options: ["is", "are", "were", "be"], correct: 0, d: 2 });
