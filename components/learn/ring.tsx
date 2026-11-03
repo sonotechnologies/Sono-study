@@ -1,3 +1,5 @@
+import { cn } from "@/lib/cn";
+
 /** Progress ring (design 1e/2d): track in --surface-2, round cap, starts at 12 o'clock. */
 export function Ring({
   value,
@@ -5,6 +7,7 @@ export function Ring({
   stroke,
   color = "var(--accent)",
   label,
+  className,
   children,
 }: {
   /** 0–1; null draws only the track. */
@@ -14,14 +17,21 @@ export function Ring({
   color?: string;
   /** Accessible description, e.g. "68% ready". */
   label?: string;
+  /** Size overrides per breakpoint, e.g. "lg:size-[172px]" (the drawing scales). */
+  className?: string;
   children?: React.ReactNode;
 }) {
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const v = value === null ? 0 : Math.max(0, Math.min(1, value));
   return (
-    <div className="relative flex-none" style={{ width: size, height: size }} role={label ? "img" : undefined} aria-label={label}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90" aria-hidden>
+    <div
+      className={cn("relative size-[var(--ring)] flex-none", className)}
+      style={{ "--ring": `${size}px` } as React.CSSProperties}
+      role={label ? "img" : undefined}
+      aria-label={label}
+    >
+      <svg width="100%" height="100%" viewBox={`0 0 ${size} ${size}`} className="-rotate-90" aria-hidden>
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--surface-2)" strokeWidth={stroke} />
         {v > 0 && (
           <circle

@@ -61,7 +61,7 @@ export function BoardTable({
 }) {
   const viewerInRows = rows.some((r) => r.isViewer);
   return (
-    <div className="flex flex-col lg:rounded-2xl lg:border lg:border-border lg:bg-surface lg:px-5 lg:py-2">
+    <div className="flex flex-col tabular-nums lg:rounded-2xl lg:border lg:border-border lg:bg-surface lg:px-5 lg:py-2">
       <div className={cn(GRID, "pb-1.5 text-xs text-ink-muted lg:border-b lg:border-border lg:py-2.5 lg:text-[13px]")}>
         <span>
           <span className="lg:hidden">#</span>

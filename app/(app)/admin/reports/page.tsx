@@ -25,7 +25,7 @@ export default async function ReportsAdminPage() {
         <h1 className="font-display text-[22px] font-bold lg:text-[32px]">Reported questions</h1>
         <p className="text-sm text-ink-muted">
           {items.length === 0
-            ? "Nothing to review."
+            ? "Nothing to review. Reported questions show up here."
             : `${items.length} question${items.length === 1 ? "" : "s"} reported. ${AUTO_HIDE_REPORTS} reports hide a question until you decide.`}
         </p>
       </header>

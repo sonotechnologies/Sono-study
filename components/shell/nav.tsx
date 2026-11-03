@@ -18,9 +18,32 @@ const SIDEBAR = [
 
 const isActive = (pathname: string, href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
+/**
+ * Focus screens (designs 2f, 2i, 2j, 2k, 2m, 2n, 2o): full screen on phones, no tab bar.
+ * Each has its own back/close control at the top.
+ */
+const FOCUS = [
+  /^\/cards\/[^/]+(\/.*)?$/, // flashcard session, new/edit card
+  /^\/tutor\/[^/]+$/,
+  /^\/results\/[^/]+\/review\//,
+  /^\/upload\/[^/]+$/, // upload progress / ready
+  /^\/theory\/[^/]+$/,
+  /^\/billing\//,
+];
+export const isFocusRoute = (pathname: string) => FOCUS.some((r) => r.test(pathname));
+/** Desktop focus (design 5f): the flashcard session hides the sidebar too. */
+const isDesktopFocus = (pathname: string) => /^\/cards\/[^/]+$/.test(pathname);
+
+/** The page area: leaves room for the phone tab bar, except on focus screens. */
+export function MainArea({ children }: { children: React.ReactNode }) {
+  const focus = isFocusRoute(usePathname());
+  return <div className={cn("min-w-0 flex-1 lg:pb-0", focus ? "pb-[env(safe-area-inset-bottom)]" : "pb-[calc(64px+env(safe-area-inset-bottom))]")}>{children}</div>;
+}
+
 /** Desktop (≥1024px): 248px sidebar — logo, 44px nav items, Upload CTA at the bottom. */
 export function Sidebar() {
   const pathname = usePathname();
+  if (isDesktopFocus(pathname)) return null;
   return (
     <aside className="sticky top-0 hidden h-dvh w-[248px] flex-none flex-col gap-1 border-r border-border px-4 py-6 lg:flex">
       <Link href="/home" className="px-3 pb-6">
@@ -35,7 +58,7 @@ export function Sidebar() {
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex h-11 items-center rounded-[12px] px-3 text-[15px] transition-colors",
+                "flex h-11 items-center rounded-[12px] px-3 text-[15px] transition-colors focus-visible:outline-accent",
                 active ? "bg-accent-soft font-semibold text-ink" : "font-medium text-ink-muted hover:text-ink",
               )}
             >
@@ -62,6 +85,7 @@ const TABS = [
 /** Mobile: 64px bottom tab bar with the accent Upload button in the centre. */
 export function TabBar() {
   const pathname = usePathname();
+  if (isFocusRoute(pathname)) return null;
   return (
     <nav
       aria-label="Main"

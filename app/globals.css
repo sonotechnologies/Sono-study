@@ -31,10 +31,10 @@
   --accent: #5b4be6;
   --accent-soft: #ece9ff;
   --on-accent: #ffffff;
-  --spark: #4e8a00;
-  --correct: #13804b;
-  --wrong: #c7362f;
-  --flag: #a86600;
+  --spark: #3f7300;
+  --correct: #0e6e3f;
+  --wrong: #b52c25;
+  --flag: #8a5300;
   --correct-soft: #e3f4ea;
   --wrong-soft: #fbe7e6;
   --scrim: rgba(16, 18, 43, 0.45);
@@ -74,8 +74,28 @@ body {
 
 body {
   font-family: var(--font-sans);
-  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Timers, countdowns and score tables keep their digits from jumping. Not page-wide:
+   Inter's tabular forms also widen hyphens ("30 - question"). */
+time,
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Small text links and switches: a 44×44px touch area without changing the layout. */
+@utility tap {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
 }
 
 @layer base {

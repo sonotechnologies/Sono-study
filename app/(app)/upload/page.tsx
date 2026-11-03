@@ -15,9 +15,19 @@ import { requireViewer } from "@/lib/viewer";
 
 export const metadata: Metadata = { title: "Upload" };
 
-const STATUS: Record<string, string> = { queued: "Waiting", extracting: "Reading", generating: "Making questions", ready: "Ready", failed: "Didn't work" };
+const STATUS: Record<string, string> = {
+  queued: "Waiting",
+  extracting: "Reading",
+  generating: "Making questions",
+  ready: "Ready",
+  failed: "Didn't work",
+};
 
-export default async function UploadPage({ searchParams }: { searchParams: Promise<{ course?: string }> }) {
+export default async function UploadPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ course?: string }>;
+}) {
   const viewer = await requireViewer();
   const db = await getDb();
   const plan = viewer.effectivePlan;
@@ -27,11 +37,17 @@ export default async function UploadPage({ searchParams }: { searchParams: Promi
     recentUploads(db, viewer.id),
   ]);
 
-  const blocked = uploadsLeft.remaining === 0 ? uploadsLeft : aiLeft.remaining === 0 ? aiLeft : null;
+  const blocked =
+    uploadsLeft.remaining === 0
+      ? uploadsLeft
+      : aiLeft.remaining === 0
+        ? aiLeft
+        : null;
   if (blocked) {
     const code = viewer.referralCode ?? viewer.handle ?? viewer.id;
     return (
       <main className="flex min-h-[calc(100dvh-64px)] flex-col lg:min-h-dvh">
+        <TopBar back="/home" heading="Upload notes" />
         <DailyLimitState
           variant="screen"
           action={blocked.action}
@@ -46,45 +62,66 @@ export default async function UploadPage({ searchParams }: { searchParams: Promi
   }
 
   const { course } = await searchParams;
-  const courses = viewer.courses.map((c) => ({ id: c.id, label: `${displayCourseCode(c.code)} · ${c.title}` }));
+  const courses = viewer.courses.map((c) => ({
+    id: c.id,
+    label: `${displayCourseCode(c.code)} · ${c.title}`,
+  }));
 
   return (
-    <main className="mx-auto flex min-h-[calc(100dvh-64px)] max-w-[720px] flex-col lg:min-h-0 lg:pt-6">
-      <TopBar back="/home" heading="Upload notes" />
-      {courses.length === 0 ? (
-        <div className="flex flex-col gap-4 px-5 pt-4 lg:px-0">
-          <p className="text-[15px] leading-relaxed text-ink-muted">Add a course first, so we know where your questions belong.</p>
-          <ButtonLink href="/courses" className="self-start">
-            Add a course
-          </ButtonLink>
-        </div>
-      ) : (
-        <UploadPicker
-          courses={courses}
-          defaultCourseId={courses.some((c) => c.id === course) ? course! : courses[0].id}
-          schoolName={viewer.school?.shortName ?? null}
-          maxBytes={MAX_UPLOAD_BYTES}
-          maxPhotos={Math.min(MAX_PHOTOS, PLANS[plan].pagesPerUpload)}
-          pagesPerUpload={PLANS[plan].pagesPerUpload}
-        />
-      )}
-      <p className="px-5 pb-2 text-[13px] text-ink-muted lg:px-0">
-        {uploadsLeft.remaining} of {uploadsLeft.limit} uploads and {aiLeft.remaining} of {aiLeft.limit} AI questions left today. Your files stay private.
-      </p>
+    <main className="mx-auto flex min-h-[calc(100dvh-64px)] w-full max-w-[720px] flex-col lg:grid lg:min-h-0 lg:max-w-[1160px] lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-x-10 lg:px-12 lg:pt-6">
+      <div className="flex min-w-0 flex-col">
+        <TopBar back="/home" heading="Upload notes" />
+        {courses.length === 0 ? (
+          <div className="flex flex-col gap-4 px-5 pt-4 lg:px-0">
+            <p className="text-[15px] leading-relaxed text-ink-muted">
+              Add a course first, so we know where your questions belong.
+            </p>
+            <ButtonLink href="/courses" className="self-start">
+              Add a course
+            </ButtonLink>
+          </div>
+        ) : (
+          <UploadPicker
+            courses={courses}
+            defaultCourseId={
+              courses.some((c) => c.id === course) ? course! : courses[0].id
+            }
+            schoolName={viewer.school?.shortName ?? null}
+            maxBytes={MAX_UPLOAD_BYTES}
+            maxPhotos={Math.min(MAX_PHOTOS, PLANS[plan].pagesPerUpload)}
+            pagesPerUpload={PLANS[plan].pagesPerUpload}
+          />
+        )}
+        <p className="px-5 pb-2 text-[13px] text-ink-muted lg:px-0">
+          {uploadsLeft.remaining} of {uploadsLeft.limit} uploads and{" "}
+          {aiLeft.remaining} of {aiLeft.limit} AI questions left today. Your
+          files stay private.
+        </p>
+      </div>
       {recent.length > 0 && (
-        <section className="flex flex-col px-5 pb-6 pt-4 lg:px-0">
+        <section className="flex flex-col px-5 pb-6 pt-4 lg:px-0 lg:pt-[72px]">
           <h2 className="pb-1.5 text-[13px] text-ink-muted">Your uploads</h2>
           <ul className="flex flex-col divide-y divide-border rounded-2xl border border-border bg-surface">
             {recent.map((u) => (
               <li key={u.id}>
-                <Link href={`/upload/${u.id}`} className="flex min-h-14 items-center gap-3 px-4 py-2.5">
+                <Link
+                  href={`/upload/${u.id}`}
+                  className="flex min-h-14 items-center gap-3 px-4 py-2.5"
+                >
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate text-[15px]">{u.title}</span>
                     <span className="text-[13px] text-ink-muted">
-                      {displayCourseCode(u.courseCode)} · {u.status === "ready" ? `${u.questionsMade} questions` : STATUS[u.status]}
+                      {displayCourseCode(u.courseCode)} ·{" "}
+                      {u.status === "ready"
+                        ? `${u.questionsMade} questions`
+                        : STATUS[u.status]}
                     </span>
                   </span>
-                  <ChevronRight size={18} className="text-ink-muted" aria-hidden />
+                  <ChevronRight
+                    size={18}
+                    className="text-ink-muted"
+                    aria-hidden
+                  />
                 </Link>
               </li>
             ))}

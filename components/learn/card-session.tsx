@@ -64,11 +64,15 @@ export function CardSession({ courseId, courseCode, cards, dueTotal }: { courseI
   }, [flipped, rate, summary]);
 
   const header = (
-    <div className="flex h-14 items-center gap-1 pl-1 pr-5 lg:-ml-3 lg:pl-0">
-      <Link href={`/courses/${courseId}`} aria-label="Back" className="grid size-12 place-items-center rounded-full hover:bg-surface-2">
+    <div className="flex h-14 items-center gap-1 pl-1 pr-5 lg:h-16 lg:gap-4 lg:pl-0 lg:pr-0">
+      <Link href={`/courses/${courseId}`} aria-label="Back" className="grid size-12 place-items-center rounded-full hover:bg-surface-2 lg:hidden">
         <ChevronLeft size={22} aria-hidden />
       </Link>
-      <span className="flex-1 text-sm text-ink-muted">
+      <Link href={`/courses/${courseId}`} className={buttonClass("secondary", "sm", "hidden lg:inline-flex")}>
+        Done
+      </Link>
+      <span className="flex-1 text-sm text-ink-muted lg:text-base lg:font-semibold lg:text-ink">
+        <span className="hidden lg:inline">Flashcards · </span>
         {courseCode} · {dueTotal} due
       </span>
       {!summary && total > 0 && (
@@ -166,12 +170,12 @@ export function CardSession({ courseId, courseCode, cards, dueTotal }: { courseI
         <div className="h-full rounded-full bg-spark transition-[width] duration-200" style={{ width: `${(index / total) * 100}%` }} />
       </div>
 
-      <div className="flex flex-1 flex-col px-5 py-5 lg:px-0 [perspective:1200px]">
+      <div className="flex flex-1 flex-col px-5 py-5 lg:flex-none lg:px-0 lg:pt-16 [perspective:1200px]">
         <button
           type="button"
           onClick={() => setFlipped((f) => !f)}
           aria-label={flipped ? "Answer shown. Tap to see the question again" : "Tap to show the answer"}
-          className="relative min-h-[360px] flex-1 text-left [transform-style:preserve-3d] transition-transform duration-200 ease-out motion-reduce:transition-none lg:min-h-[420px]"
+          className="relative min-h-[360px] flex-1 text-left [transform-style:preserve-3d] transition-transform duration-200 ease-out motion-reduce:transition-none lg:min-h-[400px] lg:flex-none"
           style={{ transform: flipped ? "rotateY(180deg)" : undefined }}
         >
           <span className={cn("absolute inset-0 flex flex-col items-center justify-center gap-4 rounded-3xl border border-border bg-surface p-6 text-center [backface-visibility:hidden] motion-reduce:transition-opacity motion-reduce:duration-200", flipped && "motion-reduce:opacity-0")}>
@@ -203,13 +207,16 @@ export function CardSession({ courseId, courseCode, cards, dueTotal }: { courseI
           {error}
         </p>
       )}
-      <div className="sticky bottom-[calc(64px+env(safe-area-inset-bottom))] bg-bg px-5 pb-5 pt-2 lg:bottom-0 lg:px-0">
+      <div className="sticky bottom-0 bg-bg px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-2 lg:static lg:bg-transparent lg:px-0 lg:pb-8">
         {flipped ? (
           <div className="grid grid-cols-4 gap-2" role="group" aria-label="How well did you know it?">
             {BUTTONS.map((b, i) => (
-              <button key={b.rating} type="button" onClick={() => rate(b.rating)} aria-keyshortcuts={String(i + 1)} className={cn("flex h-16 flex-col items-center justify-center rounded-[12px] font-semibold", b.cls)}>
+              <button key={b.rating} type="button" onClick={() => rate(b.rating)} aria-keyshortcuts={String(i + 1)} className={cn("flex h-16 flex-col items-center justify-center rounded-[12px] font-semibold transition-transform duration-150 active:scale-[0.96] motion-reduce:active:scale-100", b.cls)}>
                 <span className="text-[15px]">{b.label}</span>
-                <span className="text-xs font-normal opacity-80">{card.intervals[b.rating]}</span>
+                <span className="text-xs font-normal opacity-80">
+                  {card.intervals[b.rating]}
+                  <span className="hidden lg:inline"> · {i + 1}</span>
+                </span>
               </button>
             ))}
           </div>
@@ -218,6 +225,7 @@ export function CardSession({ courseId, courseCode, cards, dueTotal }: { courseI
             Show answer
           </button>
         )}
+        <p className="hidden pt-4 text-center text-[13px] text-ink-muted lg:block">Space to flip · 1–4 to rate</p>
       </div>
     </div>
   );

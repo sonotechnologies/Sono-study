@@ -15,7 +15,7 @@ export default async function UploadStatusPage({ params, searchParams }: { param
   if (!view) notFound();
   const heading = view.type === "photos" ? `${view.courseCode} · ${view.title}` : view.courseCode;
   return (
-    <main className="mx-auto flex min-h-[calc(100dvh-64px)] max-w-[720px] flex-col lg:min-h-0 lg:pt-6">
+    <main className="mx-auto flex min-h-dvh max-w-[720px] flex-col lg:min-h-0 lg:pt-6">
       <TopBar back="/upload" heading={heading} />
       {error && (
         <p role="alert" className="mx-5 rounded-[12px] bg-wrong-soft px-3.5 py-3 text-sm lg:mx-0">

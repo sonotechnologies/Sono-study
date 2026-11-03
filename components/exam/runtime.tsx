@@ -497,7 +497,7 @@ function TimerPill({ left, low, pulse }: { left: number | null; low: boolean; pu
       )}
     >
       <Clock size={16} strokeWidth={2} className={low ? "" : "text-ink-muted"} aria-hidden />
-      <span className="font-display text-base font-bold lg:text-lg">{left === null ? "Untimed" : formatClock(left)}</span>
+      <span className="font-display text-base font-bold tabular-nums lg:text-lg">{left === null ? "Untimed" : formatClock(left)}</span>
     </div>
   );
 }
@@ -514,7 +514,7 @@ function Legend({ answered, flagged, blank }: { answered: number; flagged: numbe
         Flagged {flagged}
       </span>
       <span className="flex items-center gap-1.5">
-        <span className="size-3 rounded bg-surface-2" aria-hidden />
+        <span className="size-3 rounded border border-ink-muted/60 bg-surface-2" aria-hidden />
         Blank {blank}
       </span>
     </div>

@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Link from "next/link";
+import { and, eq, ne } from "drizzle-orm";
 import { getDb } from "@/db";
+import { mockAttempts } from "@/db/schema";
 import { RewardLine } from "@/components/account/challenge-cards";
 import { ShareRankButton } from "@/components/account/share-rank-button";
 import { TopBar } from "@/components/account/top-bar";
@@ -33,6 +36,10 @@ export default async function ChallengeResultPage({ params }: { params: Promise<
 
   const result = await getClosedChallengeResult(db, challenge, viewer.id, 10);
   const me = result.viewer;
+  const [mine] = await db
+    .select({ id: mockAttempts.id })
+    .from(mockAttempts)
+    .where(and(eq(mockAttempts.challengeId, challenge.id), eq(mockAttempts.userId, viewer.id), ne(mockAttempts.status, "in_progress")));
   const standings = me && !result.standings.some((r) => r.isViewer) ? [...result.standings, me] : result.standings;
   const stats = [
     ["Score", me ? `${me.score}/${me.maxScore}` : "—"],
@@ -79,14 +86,19 @@ export default async function ChallengeResultPage({ params }: { params: Promise<
       </section>
 
       {me && (
-        <div className="sticky bottom-[calc(64px+env(safe-area-inset-bottom))] bg-bg px-5 pb-5 pt-3 lg:bottom-0 lg:px-0">
+        <div className="sticky bottom-[calc(64px+env(safe-area-inset-bottom))] grid grid-cols-[2fr_1fr] gap-2 bg-bg px-5 pb-5 pt-3 lg:bottom-0 lg:flex lg:px-0">
           <ShareRankButton
             challengeId={challenge.id}
             text={`I placed #${me.rank} of ${result.total} in the ${challenge.title} on Sono Study. Beat me next Friday?`}
-            className={buttonClass("primary", "lg", "w-full")}
+            className={buttonClass("primary", "lg", "w-full lg:w-auto")}
           >
             Share my rank
           </ShareRankButton>
+          {mine && (
+            <Link href={`/results/${mine.id}/review/1`} className={buttonClass("secondary", "lg")}>
+              Review
+            </Link>
+          )}
         </div>
       )}
     </main>

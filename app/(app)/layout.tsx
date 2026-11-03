@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { Sidebar, TabBar } from "@/components/shell/nav";
+import { MainArea, Sidebar, TabBar } from "@/components/shell/nav";
 import { Paywall } from "@/components/account/paywall";
 import { extendProUntil } from "@/lib/billing";
 import { needsOnboarding } from "@/lib/onboarding";
@@ -14,7 +14,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-dvh">
       <Sidebar />
-      <div className="min-w-0 flex-1 pb-[calc(64px+env(safe-area-inset-bottom))] lg:pb-0">{children}</div>
+      <MainArea>{children}</MainArea>
       <TabBar />
       <Suspense>
         <Paywall

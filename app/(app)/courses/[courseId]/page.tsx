@@ -20,7 +20,7 @@ import { daysUntilExam, examCountdown, readNext } from "@/lib/study-plan";
 import { lagosDate } from "@/lib/time";
 import { recentUploads } from "@/lib/uploads";
 import { requireViewer } from "@/lib/viewer";
-import { startPracticeAction } from "../actions";
+import { fixWeakTopicsAction, startPracticeAction } from "../actions";
 
 export const metadata: Metadata = { title: "Course" };
 
@@ -58,6 +58,10 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
   const weakest = snap.topics.filter((t) => t.questions > 0 && t.mastery !== null && t.label !== "mastered").sort((a, b) => a.mastery! - b.mastery!);
   const reading = await readNext(db, viewer.id, courseId, weakest.slice(0, 3).map((t) => t.id));
   const pct = snap.readiness === null ? null : Math.round(snap.readiness * 100);
+  // Home already shows the plan for its focus course (next exam, or the first course).
+  const homeFocus = viewer.courses.find((c) => c.examDate && daysUntilExam(c.examDate, at) >= 0) ?? viewer.courses[0];
+  const showPlan = homeFocus?.id !== courseId;
+  const weakCount = Math.min(3, snap.topics.filter((t) => t.label === "weak" || t.label === "shaky").length);
   const boardRows = [...board.rows];
   if (board.viewer && !boardRows.some((r) => r.isViewer)) boardRows.push(board.viewer);
 
@@ -67,8 +71,6 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
         <Link href="/courses" className="flex h-12 items-center gap-0.5 rounded-full pr-3 text-sm text-ink-muted hover:text-ink">
           <ChevronLeft size={22} className="text-ink" aria-hidden /> Courses
         </Link>
-        <span className="flex-1" />
-        {countdown && <span className={cn("text-[13px] font-semibold", soon ? "text-flag" : "text-ink-muted")}>{countdown}</span>}
       </div>
 
       {error && (
@@ -79,22 +81,56 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
 
       <div className="grid gap-6 px-5 lg:grid-cols-[1fr_360px] lg:gap-10 lg:px-0">
         <div className="flex min-w-0 flex-col gap-6">
-          <header className="flex items-center gap-5">
-            <Ring value={snap.readiness} size={120} stroke={10} color={snap.label ? MASTERY_COLOR[snap.label] : undefined} label={pct === null ? "No readiness yet" : `${pct}% ready, ${snap.label}`}>
-              <span className="font-display text-[28px] font-bold leading-none">{pct === null ? "–" : `${pct}%`}</span>
-              <span className="text-xs text-ink-muted">{snap.label ?? "not started"}</span>
+          <header className="flex items-center gap-5 lg:gap-7">
+            <Ring
+              value={snap.readiness}
+              size={112}
+              stroke={10}
+              className="lg:size-[150px]"
+              color={snap.label ? MASTERY_COLOR[snap.label] : undefined}
+              label={pct === null ? "No readiness yet" : `${pct}% ready, ${snap.label}`}
+            >
+              <span className="font-display text-[28px] font-bold leading-none lg:text-[36px]">{pct === null ? "–" : `${pct}%`}</span>
+              <span className="text-xs text-ink-muted lg:text-[13px]">{snap.label ?? "not started"}</span>
             </Ring>
             <div className="flex min-w-0 flex-col gap-1">
-              <h1 className="font-display text-[28px] font-bold leading-[1.1] lg:text-[36px]">{code}</h1>
-              <span className="text-sm leading-snug text-ink-muted">{course.title}</span>
+              {countdown && (
+                <a href="#exam-date" className={cn("text-[13px] font-semibold lg:text-sm", soon ? "text-flag" : "text-ink-muted")}>
+                  {countdown}
+                </a>
+              )}
+              <h1 className="font-display text-[28px] font-bold leading-[1.1] lg:text-[40px]">{code}</h1>
+              <span className="text-sm leading-snug text-ink-muted lg:text-base">{course.title}</span>
               {snap.trend !== null && snap.trend !== 0 && (
                 <span className={cn("text-[13px] font-semibold", snap.trend > 0 ? "text-spark" : "text-ink-muted")}>
                   {snap.trend > 0 ? "+" : ""}
                   {snap.trend}% this week
                 </span>
               )}
+              <div className="mt-3 hidden flex-wrap gap-2.5 lg:flex">
+                <ButtonLink href={`/courses/${courseId}/mock`}>Start a mock</ButtonLink>
+                {weakCount > 0 && (
+                  <form action={fixWeakTopicsAction.bind(null, courseId)}>
+                    <button type="submit" className={buttonClass("secondary", "md")}>
+                      Practise weak topics
+                    </button>
+                  </form>
+                )}
+                <ButtonLink href={`/courses/${courseId}/theory`} variant="secondary">
+                  Theory
+                </ButtonLink>
+              </div>
             </div>
           </header>
+
+          <div className="grid grid-cols-[2fr_1fr] gap-2 lg:hidden">
+            <ButtonLink href={`/courses/${courseId}/mock`} size="lg">
+              Start a mock
+            </ButtonLink>
+            <ButtonLink href={`/courses/${courseId}/theory`} variant="secondary" size="lg">
+              Theory
+            </ButtonLink>
+          </div>
 
           <section className="flex flex-col gap-2.5" aria-label="Topics">
             <SectionTitle action={snap.topics.length > 0 && <span className="text-[13px] text-ink-muted">Tap to practise</span>}>Topics</SectionTitle>
@@ -105,7 +141,7 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
                   .map((t) => (
                     <li key={t.id}>
                       <form action={startPracticeAction.bind(null, courseId, [t.id])}>
-                        <button type="submit" className="flex min-h-10 items-center gap-2 rounded-full border border-border bg-surface px-3.5 text-sm hover:border-accent">
+                        <button type="submit" className="flex min-h-11 items-center gap-2 rounded-full border border-border bg-surface px-3.5 text-sm hover:border-accent">
                           <span aria-hidden className="size-2 rounded-full" style={{ background: t.label ? MASTERY_COLOR[t.label] : "var(--border)" }} />
                           {t.name}
                           <span className="text-xs font-semibold" style={{ color: t.label ? MASTERY_COLOR[t.label] : "var(--ink-muted)" }}>
@@ -134,16 +170,7 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
             </Link>
           </div>
 
-          <div className="grid grid-cols-[2fr_1fr] gap-2">
-            <ButtonLink href={`/courses/${courseId}/mock`} size="lg">
-              Start a mock
-            </ButtonLink>
-            <ButtonLink href={`/courses/${courseId}/theory`} variant="secondary" size="lg">
-              Theory
-            </ButtonLink>
-          </div>
-
-          <PlanCard plan={snap.plan} courseId={courseId} courseCode={code} hasExamDate={!!course.examDate} />
+          {showPlan && <PlanCard plan={snap.plan} courseId={courseId} courseCode={code} hasExamDate={!!course.examDate} />}
 
           {reading.length > 0 && (
             <section aria-label="Read next" className="flex flex-col">
@@ -171,7 +198,10 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
             </section>
           )}
 
-          <section aria-label="Shared banks" className="flex flex-col">
+        </div>
+
+        <aside className="flex min-w-0 flex-col gap-6">
+          <section aria-label="Shared banks" className="flex flex-col lg:rounded-2xl lg:border lg:border-border lg:bg-surface lg:p-4">
             <SectionTitle>Shared banks</SectionTitle>
             {banks.length === 0 && cls.questions === 0 ? (
               <p className="text-[15px] text-ink-muted">No banks for {code} yet. Upload your notes with &ldquo;Share with your class&rdquo; on to start one.</p>
@@ -207,13 +237,10 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
               </ul>
             )}
           </section>
-        </div>
-
-        <aside className="flex min-w-0 flex-col gap-6">
-          <section aria-label="My uploads" className="flex flex-col">
+          <section aria-label="My uploads" className="flex flex-col lg:rounded-2xl lg:border lg:border-border lg:bg-surface lg:p-4">
             <SectionTitle
               action={
-                <Link href={`/upload?course=${courseId}`} className="text-sm font-semibold text-accent">
+                <Link href={`/upload?course=${courseId}`} className="tap text-sm font-semibold text-accent">
                   + Upload
                 </Link>
               }
@@ -240,12 +267,15 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
                 ))}
               </ul>
             )}
+            <Link href={`/courses/${courseId}/questions/new`} className="tap mt-2 self-start text-[13px] font-semibold text-ink-muted hover:text-ink">
+              Or type in a question yourself
+            </Link>
           </section>
 
           <section aria-label="This week's leaderboard" className="flex flex-col gap-2.5 rounded-2xl border border-border bg-surface p-4">
             <SectionTitle
               action={
-                <Link href={`/leaderboard?course=${courseId}`} className="text-sm font-semibold text-accent">
+                <Link href={`/leaderboard?course=${courseId}`} className="tap text-sm font-semibold text-accent">
                   Full board
                 </Link>
               }
@@ -271,11 +301,6 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
 
           <ExamDateForm courseId={courseId} examDate={course.examDate} examTime={enrollment?.examTime ?? null} minDate={lagosDate(at)} />
 
-          <div className="flex flex-wrap gap-2">
-            <Link href={`/courses/${courseId}/questions/new`} className={buttonClass("ghost", "sm")}>
-              Add a question
-            </Link>
-          </div>
         </aside>
       </div>
     </main>

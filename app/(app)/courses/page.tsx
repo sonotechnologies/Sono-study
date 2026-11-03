@@ -32,7 +32,7 @@ export default async function CoursesPage({ searchParams }: { searchParams: Prom
     <main className="mx-auto flex max-w-[960px] flex-col gap-5 px-5 pt-4 pb-6 lg:gap-7 lg:px-12 lg:py-10">
       <header className="flex items-end justify-between gap-4">
         <h1 className="font-display text-[22px] font-bold lg:text-[32px]">Your courses</h1>
-        <Link href="/onboarding?edit=1&step=3" className="text-sm font-semibold text-accent">
+        <Link href="/onboarding?edit=1&step=3" className="tap text-sm font-semibold text-accent">
           Edit courses
         </Link>
       </header>
@@ -51,14 +51,16 @@ export default async function CoursesPage({ searchParams }: { searchParams: Prom
               <Link href={`/courses/${c.id}`} className="flex min-h-[72px] items-center gap-4 px-4 py-3 hover:bg-surface-2 lg:px-5">
                 <Ring value={c.score} size={44} stroke={5} color={c.label ? MASTERY_COLOR[c.label] : undefined} />
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="font-display text-lg font-bold">{displayCourseCode(c.code)}</span>
-                  <span className="truncate text-[13px] text-ink-muted">{c.title}</span>
-                </span>
-                <span className="flex flex-col items-end gap-0.5 text-right">
-                  <span className="text-[13px]" style={{ color: c.label ? MASTERY_COLOR[c.label] : "var(--ink-muted)" }}>
-                    {pct === null ? (c.questions ? "not started" : "no questions yet") : `${pct}% · ${c.label}`}
+                  <span className="flex items-baseline gap-2">
+                    <span className="flex-none whitespace-nowrap font-display text-lg font-bold">{displayCourseCode(c.code)}</span>
+                    <span className="min-w-0 truncate text-[13px] text-ink-muted">{c.title}</span>
                   </span>
-                  {countdown && <span className={cn("text-[13px]", soon ? "font-semibold text-flag" : "text-ink-muted")}>{countdown}</span>}
+                  <span className="flex flex-wrap gap-x-2 text-[13px]">
+                    <span style={{ color: c.label ? MASTERY_COLOR[c.label] : "var(--ink-muted)" }}>
+                      {pct === null ? (c.questions ? "not started" : "no questions yet") : `${pct}% · ${c.label}`}
+                    </span>
+                    {countdown && <span className={cn(soon ? "font-semibold text-flag" : "text-ink-muted")}>· {countdown}</span>}
+                  </span>
                 </span>
                 <ChevronRight size={20} className="text-ink-muted" aria-hidden />
               </Link>

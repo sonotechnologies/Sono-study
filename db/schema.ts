@@ -487,7 +487,7 @@ export const cardReviewLog = pgTable(
   (t) => [index("card_review_log_user_idx").on(t.userId, t.reviewedAt)],
 );
 
-export type TutorCitation = { id: string; label: string; uploadId: string; page: number | null; own: boolean };
+export type TutorCitation = { id: string; label: string; uploadId: string; page: number | null; own: boolean; /** Start of the cited passage (desktop source panel). */ quote?: string };
 
 export const cardReviews = pgTable(
   "card_reviews",

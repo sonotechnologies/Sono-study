@@ -16,7 +16,7 @@ export default async function PaymentResultPage({ searchParams }: { searchParams
 
   if (payment && payment.userId === viewer.id && payment.status === "success" && viewer.proUntil) {
     return (
-      <main className="flex min-h-[calc(100dvh-64px)] flex-col lg:min-h-dvh">
+      <main className="flex min-h-dvh flex-col lg:min-h-dvh">
         <PaymentSuccessState
           variant="screen"
           passName={PASSES[payment.product].name}
@@ -30,7 +30,7 @@ export default async function PaymentResultPage({ searchParams }: { searchParams
 
   const failed = payment?.status === "failed";
   return (
-    <main className="flex min-h-[calc(100dvh-64px)] flex-col gap-5 px-5 pb-5 pt-[72px] lg:mx-auto lg:min-h-dvh lg:max-w-[480px] lg:px-0 lg:pt-24">
+    <main className="flex min-h-dvh flex-col gap-5 px-5 pb-5 pt-[72px] lg:mx-auto lg:min-h-dvh lg:max-w-[480px] lg:px-0 lg:pt-24">
       <h1 className="font-display text-[40px] font-bold leading-[1.05]">
         {failed ? "Payment didn't go through." : "Confirming your payment…"}
       </h1>

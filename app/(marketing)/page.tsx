@@ -104,12 +104,12 @@ export default async function Landing() {
 
         <section aria-label="Schools" className="flex flex-col items-center gap-5 px-4 pb-16 sm:px-8 lg:px-20 lg:pb-[72px]">
           <span className="text-[14px] text-ink-muted">Your school&apos;s courses are already set up</span>
-          <ul className="grid w-full max-w-[1040px] grid-cols-3 gap-3 sm:grid-cols-6 lg:gap-4">
+          {/* Plain text, not boxes: they aren't buttons. */}
+          <ul className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 font-display text-lg font-bold text-ink-muted lg:gap-x-12 lg:text-xl">
             {SHOWCASE.map((s) => (
-              <li key={s} className="grid h-14 place-items-center rounded-[12px] border border-border font-display text-[15px] font-semibold text-ink-muted">
-                {s}
-              </li>
+              <li key={s}>{s}</li>
             ))}
+            <li className="text-[15px] font-normal">and {universities - SHOWCASE.length}+ more</li>
           </ul>
         </section>
 
@@ -180,7 +180,7 @@ export default async function Landing() {
           <div className="flex flex-col">
             {FAQ.map(([q, a], i) => (
               <details key={q} open={i === 0} className="group border-t border-border py-5 lg:py-[22px]">
-                <summary className="flex cursor-pointer list-none justify-between gap-4 text-[17px] font-semibold lg:text-lg [&::-webkit-details-marker]:hidden">
+                <summary className="-my-2 flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 py-2 text-[17px] font-semibold lg:text-lg [&::-webkit-details-marker]:hidden">
                   {q}
                   <span aria-hidden className="text-xl font-normal text-ink-muted">
                     <span className="group-open:hidden">+</span>
@@ -242,9 +242,11 @@ function PhoneMock() {
     ["D", "has been"],
   ] as const;
   return (
-    <div aria-hidden className="relative hidden justify-center sm:flex">
-      <div className="absolute top-[60px] size-[420px] rounded-full bg-accent-soft" />
-      <div className="relative flex h-[660px] w-[320px] flex-col overflow-hidden rounded-[40px] border-8 border-surface-2 bg-surface">
+    <div aria-hidden className="relative flex h-[420px] justify-center overflow-hidden sm:h-auto sm:overflow-visible">
+      <div className="absolute top-[60px] size-[300px] rounded-full bg-accent-soft sm:size-[420px]" />
+      {/* Phones see the top of the mock, fading into the page. */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-24 bg-gradient-to-t from-bg to-transparent sm:hidden" />
+      <div className="relative flex h-[660px] w-[320px] origin-top scale-[0.8] flex-col sm:scale-100 overflow-hidden rounded-[40px] border-8 border-surface-2 bg-surface">
         <div className="mt-4 flex h-[52px] items-center justify-between border-b border-border px-3.5">
           <span className="text-[14px] font-semibold">GST 111 · Mock</span>
           <span className="flex h-[30px] items-center rounded-full bg-surface-2 px-2.5 font-display text-[14px] font-bold">18:42</span>

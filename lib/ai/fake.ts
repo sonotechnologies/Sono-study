@@ -160,7 +160,7 @@ export function fakeProvider(name = "fake"): AiProvider {
           } else {
             const sentence = sentencesOf(best.c.text).sort((a, b) => overlap(q, words(b)) - overlap(q, words(a)))[0] ?? best.c.text.slice(0, 200);
             const lead = ctx.instruction ? `${ctx.instruction.replace(/\.$/, "")}: ` : "";
-            reply = { answer: `${lead}From your notes (${best.c.label}): ${sentence}`, citedChunkIds: [best.c.id], notInNotes: false };
+            reply = { answer: `${lead}${sentence}`, citedChunkIds: [best.c.id], notInNotes: false };
           }
           break;
         }

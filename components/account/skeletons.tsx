@@ -123,3 +123,24 @@ export function HomeSkeleton() {
     </div>
   );
 }
+
+/**
+ * Generic page skeleton for routes without their own: a title, a hero block and list rows,
+ * in the same column the page uses, so a tap shows something at once on slow data.
+ */
+export function PageSkeleton({ label, hero = true, rows = 5, narrow = false }: { label: string; hero?: boolean; rows?: number; narrow?: boolean }) {
+  return (
+    <div role="status" aria-label={label} className={cn("mx-auto flex w-full flex-col gap-4 px-5 pt-4 lg:gap-6 lg:px-12 lg:py-10", narrow ? "max-w-[760px]" : "max-w-[1160px]")}>
+      <Bar className="h-7 w-44 rounded-lg lg:h-9 lg:w-64" />
+      {hero && <span className="block h-[180px] rounded-2xl border border-border bg-surface lg:h-[220px]" />}
+      <div className="flex flex-col rounded-2xl border border-border bg-surface px-4">
+        {Array.from({ length: rows }, (_, i) => (
+          <div key={i} className="flex min-h-14 items-center gap-3 border-b border-border last:border-0">
+            <span className="size-8 flex-none rounded-full bg-surface-2" />
+            <Bar className="h-3.5 w-1/2" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

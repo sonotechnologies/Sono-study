@@ -140,7 +140,7 @@ export function MockSetup({
               <legend className="flex w-full justify-between pb-2 text-[13px]">
                 <span className="text-ink-muted">Topics</span>
                 {weak.length > 0 && (
-                  <button type="button" onClick={() => setPicked(weak)} className="font-semibold text-accent">
+                  <button type="button" onClick={() => setPicked(weak)} className="tap font-semibold text-accent">
                     Weak only
                   </button>
                 )}
@@ -152,7 +152,7 @@ export function MockSetup({
                     <label
                       key={t.id}
                       className={cn(
-                        "flex h-10 cursor-pointer items-center gap-2 rounded-full border px-3 text-sm has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent",
+                        "flex h-11 cursor-pointer items-center gap-2 rounded-full border px-3.5 text-sm has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent",
                         on ? "border-accent bg-accent-soft" : "border-border bg-surface",
                       )}
                     >

@@ -182,7 +182,7 @@ export function OnboardingFlow({
               } else go(step + 1);
             }}
           >
-            {step === 3 ? `Continue with ${courses.length} course${courses.length === 1 ? "" : "s"}` : pending ? "Checking…" : "Continue"}
+            {step === 3 ? (courses.length ? `Continue with ${courses.length} course${courses.length === 1 ? "" : "s"}` : "Add at least one course") : pending ? "Checking…" : "Continue"}
           </button>
         ) : (
           <>
@@ -270,7 +270,7 @@ function SchoolStep({ schools, school, onPick }: { schools: SchoolOption[]; scho
             Can&apos;t find your school?{" "}
             <button
               type="button"
-              className="font-semibold text-accent"
+              className="tap font-semibold text-accent"
               onClick={() => {
                 setNewName(query.length > 5 ? query : "");
                 setAdding(true);
@@ -505,11 +505,11 @@ function CoursesStep({
         </form>
         {codeError && <span className="text-[13px] text-wrong">{codeError}</span>}
         {suggestions.length > 0 && (
-          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-ink-muted">
+          <p className="flex flex-wrap items-center gap-2 text-[13px] text-ink-muted">
             Popular in {levelLabel(level, schoolType)}
             {department ? ` ${shortDept}` : ""}:
             {suggestions.map((code) => (
-              <button key={code} type="button" onClick={() => add(code)} className="min-h-8 font-semibold text-accent">
+              <button key={code} type="button" onClick={() => add(code)} className="flex h-11 items-center rounded-full border border-border bg-surface px-3.5 text-sm font-semibold text-accent">
                 + {displayCourseCode(code)}
               </button>
             ))}

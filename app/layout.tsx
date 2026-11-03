@@ -7,7 +7,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-inter", display: "swap" });
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: ["600", "700"],
   variable: "--font-space-grotesk",
   display: "swap",
 });
@@ -29,10 +29,19 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+/**
+ * Static pages (like /offline, served by the service worker) are rendered without cookies,
+ * so the theme is also applied on the phone before first paint.
+ */
+const THEME_SCRIPT = `(function(){try{var m=document.cookie.match(/(?:^|; )theme=(light|dark)/);if(m)document.documentElement.setAttribute("data-theme",m[1])}catch(e){}})()`;
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const theme = (await cookies()).get("theme")?.value === "light" ? "light" : "dark";
   return (
-    <html lang="en-NG" data-theme={theme} className={`${inter.variable} ${spaceGrotesk.variable}`}>
+    <html lang="en-NG" data-theme={theme} className={`${inter.variable} ${spaceGrotesk.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="min-h-dvh">
         {children}
         <RegisterServiceWorker />

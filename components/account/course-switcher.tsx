@@ -16,7 +16,7 @@ export function CourseSwitcher({ courses, value }: { courses: { id: string; code
   if (!current) return null;
   if (courses.length < 2) return <>{displayCourseCode(current.code)}</>;
   return (
-    <span className="relative inline-flex items-center gap-1">
+    <span className="relative inline-flex min-h-11 items-center gap-1">
       {displayCourseCode(current.code)}
       <ChevronDown size={18} strokeWidth={2} className="text-ink-muted" aria-hidden />
       <select
