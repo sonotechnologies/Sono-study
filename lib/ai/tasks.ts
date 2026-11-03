@@ -353,6 +353,8 @@ const zGrade = z.object({
 export type RubricPoint = { point: string; marks: number };
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+/** Text asking for marks or giving orders is never evidence of a point, even if the model quotes it. */
+const MARKS_REQUEST = /\b(award|give|grant|deserve|assign)\b.{0,25}\b(marks?|scores?|points?|grade|10\/10)\b|\bfull marks\b|\bignore (the |all |any )?(guide|instructions?|rules|above)\b|\b(as an ai|you must|system prompt)\b/i;
 
 /**
  * Scores a theory answer against its stored rubric, point by point. The score is worked out
@@ -400,7 +402,7 @@ ${quote("answer", input.answer.slice(0, 6000))}`,
   const got = input.rubric.map((r, i) => {
     const p = reply.points.find((x) => x.n === i + 1);
     const ev = p ? norm(p.evidence) : "";
-    if (!p || ev.length < 3 || !answer.includes(ev)) return 0;
+    if (!p || ev.length < 3 || !answer.includes(ev) || MARKS_REQUEST.test(p.evidence)) return 0;
     return Math.min(r.marks, Math.round(p.awarded * 2) / 2);
   });
   const missedFirst = input.rubric.map((r, i) => ({ r, gap: r.marks - got[i] })).filter((x) => x.gap > 0).sort((a, b) => b.gap - a.gap)[0];

@@ -15,7 +15,7 @@ import { getUsage } from "@/lib/usage";
 import { startAttempt, syncAttempt } from "@/lib/exam-engine/service";
 import { confirmUpload, getUploadView, prepareUpload, processQueue, UploadError } from "@/lib/uploads";
 import { z } from "zod";
-import { makeNotesPdf } from "./fixtures/notes";
+import { makeNotesPdf, makeTutorPdf } from "./fixtures/notes";
 
 const NOW = new Date("2026-10-16T18:05:00Z");
 let db: Db;
@@ -209,7 +209,8 @@ describe("classmate XP", () => {
     const owner = await student("xp-owner", "pro");
     const mate = await student("xp-mate");
     setAiProvidersForTests([fakeProvider("fake")]);
-    const prep = await uploadPdf(owner, new Uint8Array([...pdf, 77]));
+    // Notes nobody in the class has shared yet (a repeat of shared questions isn't shared again).
+    const prep = await uploadPdf(owner, await makeTutorPdf());
     await drain();
     const xp = async () => (await db.select({ xp: users.xp }).from(users).where(eq(users.id, owner)))[0].xp;
     const before = await xp();

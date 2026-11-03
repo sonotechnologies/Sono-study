@@ -9,7 +9,10 @@ import { AiError, EMBED_DIMENSIONS, normalise, type AiProvider, type AiRequest, 
  */
 
 const ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
-export const DEFAULT_MODELS = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"];
+// Stable IDs first; Google's rolling alias last, so retired IDs (404) still leave a working model.
+export const DEFAULT_MODELS = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-flash-latest"];
+/** Finish reasons that mean the model won't produce this content: retrying wastes quota. */
+const BLOCKED = new Set(["SAFETY", "RECITATION", "PROHIBITED_CONTENT", "BLOCKLIST", "SPII"]);
 export const DEFAULT_EMBED_MODEL = "gemini-embedding-001";
 
 type GeminiError = { message?: string; status?: string; details?: { "@type"?: string; retryDelay?: string; violations?: { quotaId?: string }[] }[] };
@@ -47,30 +50,34 @@ export function geminiProvider(apiKey: string, models?: string | string[], opts:
     name: "gemini",
     vision: true,
     async generate<T>(req: AiRequest<T>): Promise<T> {
-      const body = JSON.stringify({
-        systemInstruction: { parts: [{ text: req.system }] },
-        contents: [
-          {
-            role: "user",
-            parts: req.parts.map((p) => ("text" in p ? { text: p.text } : { inlineData: { mimeType: p.image.mimeType, data: p.image.base64 } })),
+      const parts = req.parts.map((p) => ("text" in p ? { text: p.text } : { inlineData: { mimeType: p.image.mimeType, data: p.image.base64 } }));
+      /** Gemini 3 is tuned for its default temperature (low values can make it loop); older models get ours. */
+      const body = (model: string, fix: string | null) =>
+        JSON.stringify({
+          systemInstruction: { parts: [{ text: req.system }] },
+          contents: [{ role: "user", parts: fix ? [...parts, { text: fix }] : parts }],
+          generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: req.schema,
+            ...(/^gemini-(3|flash-latest|flash-lite-latest)/.test(model) ? {} : { temperature: req.temperature ?? 0.2 }),
           },
-        ],
-        generationConfig: { responseMimeType: "application/json", responseSchema: req.schema, temperature: req.temperature ?? 0.2 },
-      });
+        });
 
       let busy = false;
       let limitedFor: number | null = null;
       let lastError = "The AI reply couldn't be read.";
       let invalid = false;
+      const retired: string[] = [];
       for (const model of list) {
         let badReplies = 0;
+        let fix: string | null = null;
         for (let attempt = 0; attempt < 2; attempt++) {
           let res: Response;
           try {
             res = await http(`${ENDPOINT}/${encodeURIComponent(model)}:generateContent`, {
               method: "POST",
               headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-              body,
+              body: body(model, fix),
             });
           } catch {
             busy = true;
@@ -83,7 +90,10 @@ export function geminiProvider(apiKey: string, models?: string | string[], opts:
             limitedFor = limitedFor === null ? ms : Math.min(limitedFor, ms);
             break; // quota is per model: try the next one
           }
-          if (res.status === 404) break; // model retired for this key
+          if (res.status === 404) {
+            retired.push(model); // retired for this key
+            break;
+          }
           if (res.status === 400 || res.status === 403) {
             throw new AiError(`Gemini refused the request: ${json.error?.message ?? res.status}`, "failed");
           }
@@ -97,19 +107,24 @@ export function geminiProvider(apiKey: string, models?: string | string[], opts:
             break;
           }
           if (json.promptFeedback?.blockReason) throw new AiError("The AI declined to read this. Try clearer pages.", "blocked");
+          const finish = json.candidates?.[0]?.finishReason ?? "";
+          if (BLOCKED.has(finish)) throw new AiError("The AI declined to read this. Try clearer pages.", "blocked");
           const text = json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
           try {
             const parsed = req.parse.safeParse(JSON.parse(text));
             if (parsed.success) return parsed.data;
             lastError = "The AI reply was missing some fields.";
+            fix = `Your last reply failed validation: ${parsed.error.issues.slice(0, 3).map((i) => `${i.path.join(".")}: ${i.message}`).join("; ")}. Reply again with valid JSON only.`;
           } catch {
-            lastError = "The AI reply wasn't valid JSON.";
+            lastError = finish === "MAX_TOKENS" ? "The AI reply was cut off." : "The AI reply wasn't valid JSON.";
+            fix = finish === "MAX_TOKENS" ? "Your last reply was cut off. Reply again, shorter: fewer items, shorter explanations, valid JSON only." : "Your last reply wasn't valid JSON. Reply again with one valid JSON object only.";
           }
           invalid = true;
+          // Two bad replies from one model: try the next model rather than giving up.
           if (++badReplies >= 2) break;
         }
-        if (invalid && badReplies >= 2) throw new AiError(lastError, "invalid");
       }
+      if (retired.length === list.length) throw new AiError(`No Gemini model in GEMINI_MODEL is available (404): ${retired.join(", ")}`, "failed");
       if (limitedFor !== null) throw new AiError("Gemini free-tier limit reached.", "limit", limitedFor);
       if (busy) throw new AiError("Gemini is very busy right now.", "busy", 30_000);
       throw new AiError(lastError, invalid ? "invalid" : "failed");
