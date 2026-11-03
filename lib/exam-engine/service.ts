@@ -87,6 +87,7 @@ type SnapshotRow = {
   topicName: string | null;
   sourceLabel: string | null;
   isPastQuestion: boolean;
+  keepOptionOrder: boolean;
   difficulty: number;
 };
 
@@ -103,6 +104,7 @@ async function loadSnapshots(db: Db, where: ReturnType<typeof and>): Promise<Sna
       topicName: topics.name,
       sourceLabel: questions.sourceLabel,
       isPastQuestion: questions.isPastQuestion,
+      keepOptionOrder: questions.keepOptionOrder,
       difficulty: questions.difficulty,
     })
     .from(questions)
@@ -122,6 +124,7 @@ function toSnapshot(r: SnapshotRow): QuestionSnapshot {
     topicName: r.topicName,
     sourceLabel: r.sourceLabel,
     isPastQuestion: r.isPastQuestion,
+    ...(r.keepOptionOrder ? { keepOrder: true } : {}),
   };
 }
 
@@ -211,7 +214,7 @@ export async function startAttempt(db: Db, userId: string, input: StartInput, no
   if (!snapshot.length) throw new ExamError("There are no questions for this yet. Upload notes or pick another topic.");
 
   const optionOrder = buildOptionOrder(
-    snapshot.map((q) => ({ id: q.id, type: q.type, optionIds: q.options.map((o) => o.id) })),
+    snapshot.map((q) => ({ id: q.id, type: q.type, optionIds: q.options.map((o) => o.id), keepOrder: q.keepOrder })),
     true,
     seed,
   );
@@ -272,7 +275,7 @@ async function startChallenge(db: Db, userId: string, challengeId: string, now: 
         bankId: c.bankId,
         questionIds: snapshot.map((q) => q.id),
         snapshot,
-        optionOrder: buildOptionOrder(snapshot.map((q) => ({ id: q.id, type: q.type, optionIds: q.options.map((o) => o.id) })), true, seed),
+        optionOrder: buildOptionOrder(snapshot.map((q) => ({ id: q.id, type: q.type, optionIds: q.options.map((o) => o.id), keepOrder: q.keepOrder })), true, seed),
         config: { count: snapshot.length, timeLimitSec: c.durationSec, topicIds: [], difficulty: "mixed", bankId: c.bankId },
         durationSec: c.durationSec,
         startedAt: now,

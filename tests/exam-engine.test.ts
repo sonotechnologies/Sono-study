@@ -53,6 +53,11 @@ describe("seeded order", () => {
     expect(on.tf).toEqual(["true", "false"]);
     expect(Object.values(buildOptionOrder(qs, false, "x")).every((o) => o.join("") === "abcd" || o.join(",") === "true,false")).toBe(true);
   });
+
+  it("never shuffles a question that must keep the paper's order", () => {
+    const fixed = Array.from({ length: 20 }, (_, i) => ({ id: `p${i}`, type: "single" as const, optionIds: ["a", "b", "c", "d"], keepOrder: true }));
+    expect(Object.values(buildOptionOrder(fixed, true, "seed")).every((o) => o.join("") === "abcd")).toBe(true);
+  });
 });
 
 describe("time", () => {

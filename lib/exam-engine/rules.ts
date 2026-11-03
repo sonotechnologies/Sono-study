@@ -34,7 +34,7 @@ export function shuffle<T>(list: readonly T[], rand: () => number): T[] {
 
 /** Option order per question. True/false keeps True before False. */
 export function buildOptionOrder(
-  questions: { id: string; type: QuestionType; optionIds: string[] }[],
+  questions: { id: string; type: QuestionType; optionIds: string[]; keepOrder?: boolean }[],
   shuffleOptions: boolean,
   seed: string,
 ): Record<string, string[]> {
@@ -42,7 +42,7 @@ export function buildOptionOrder(
   const out: Record<string, string[]> = {};
   for (const q of questions) {
     if (!q.optionIds.length) continue;
-    out[q.id] = shuffleOptions && q.type !== "true_false" ? shuffle(q.optionIds, rand) : [...q.optionIds];
+    out[q.id] = shuffleOptions && q.type !== "true_false" && !q.keepOrder ? shuffle(q.optionIds, rand) : [...q.optionIds];
   }
   return out;
 }

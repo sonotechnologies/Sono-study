@@ -11,7 +11,7 @@ import { AiError, setAiProvidersForTests, withAi, type AiProvider } from "@/lib/
 import { fakeProvider } from "@/lib/ai/fake";
 import { claimJob, enqueue, RetryLater, settle } from "@/lib/jobs";
 import { putObject } from "@/lib/storage";
-import { getUsage } from "@/lib/usage";
+import { getUsage, recordUsage } from "@/lib/usage";
 import { startAttempt, syncAttempt } from "@/lib/exam-engine/service";
 import { confirmUpload, getUploadView, prepareUpload, processQueue, UploadError } from "@/lib/uploads";
 import { z } from "zod";
@@ -201,6 +201,24 @@ describe("provider fallback", () => {
     const providers = await db.select({ p: aiJobs.provider }).from(aiJobs).where(and(eq(aiJobs.type, "generate_chunk"), isNotNull(aiJobs.provider)));
     expect(providers.some((r) => r.p === "fake-backup")).toBe(true);
     expect(providers.some((r) => r.p === "gemini-down")).toBe(false);
+  });
+});
+
+describe("flashcards only", () => {
+  it("makes flashcards without using, or needing, the day's AI-question allowance", async () => {
+    const userId = await student("cards-only");
+    setAiProvidersForTests([fakeProvider("fake")]);
+    await recordUsage(db, userId, "ai_questions", 40); // free allowance used up
+    const bytes = new Uint8Array([...pdf, 91]);
+    const prep = await prepareUpload(db, userId, { courseId, contribute: false, cardsOnly: true, files: [{ name: "Week 9.pdf", type: "application/pdf", size: bytes.byteLength, hash: sha(bytes) }] });
+    if (prep.reused) throw new Error("expected a new upload");
+    for (const t of prep.targets) await putObject(t.key, bytes, "application/pdf");
+    await confirmUpload(db, userId, prep.uploadId);
+    await drain();
+    const view = await getUploadView(db, userId, prep.uploadId);
+    expect(view).toMatchObject({ status: "ready", cardsOnly: true, questionsMade: 0 });
+    expect(view!.flashcardsMade).toBeGreaterThan(0);
+    expect((await getUsage(db, userId, "ai_questions", "free")).used).toBe(40);
   });
 });
 

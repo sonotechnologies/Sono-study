@@ -16,6 +16,7 @@ import { requireViewer } from "@/lib/viewer";
 const prepareInput = z.object({
   courseId: z.string().min(1),
   contribute: z.boolean(),
+  cardsOnly: z.boolean().default(false),
   files: z
     .array(z.object({ name: z.string().max(300), type: z.string().max(200), size: z.number().int().positive(), hash: z.string() }))
     .min(1)

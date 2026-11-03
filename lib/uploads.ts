@@ -94,7 +94,7 @@ export type PrepareResult = { uploadId: string; reused: true } | { uploadId: str
 export async function prepareUpload(
   db: Db,
   userId: string,
-  input: { courseId: string; files: FileMeta[]; contribute: boolean },
+  input: { courseId: string; files: FileMeta[]; contribute: boolean; cardsOnly?: boolean },
   now = new Date(),
 ): Promise<PrepareResult> {
   const course = await courseFor(db, userId, input.courseId);
@@ -133,12 +133,13 @@ export async function prepareUpload(
   if (!aiConfigured()) throw new UploadError("Making questions isn't switched on yet. Practise a shared bank for now.");
   if (storageMode() === "none") throw new UploadError("Uploads aren't switched on yet. Practise a shared bank for now.");
   const aiLeft = await getUsage(db, userId, "ai_questions", plan, now);
-  if (aiLeft.remaining <= 0) throw new UploadError(`You've used today's ${aiLeft.limit} AI questions.`, "ai_limit");
+  // Flashcards don't use the AI-question allowance.
+  if (aiLeft.remaining <= 0 && !input.cardsOnly) throw new UploadError(`You've used today's ${aiLeft.limit} AI questions.`, "ai_limit");
 
   const keys = files.map((f) => newObjectKey(userId, f.type as UploadMime));
   const [row] = await db
     .insert(uploads)
-    .values({ userId, courseId: course.id, fileUrl: keys[0], fileKeys: keys, fileHash, type: kind, title, sizeBytes: size, visibility, statusLine: "Uploading" })
+    .values({ userId, courseId: course.id, fileUrl: keys[0], fileKeys: keys, fileHash, type: kind, title, sizeBytes: size, visibility, cardsOnly: !!input.cardsOnly, statusLine: "Uploading" })
     .returning({ id: uploads.id });
   const targets = await Promise.all(keys.map((k, i) => signedPutUrl(k, files[i].type)));
   return { uploadId: row.id, reused: false, targets };
@@ -369,7 +370,7 @@ export const ingestUpload: Handler = async (db, job) => {
     const parts = chunkPages(pages);
     if (!parts.length) throw new ExtractError("We couldn't find any readable text. Try clearer photos or another file.");
     const allowance = await getUsage(db, u.userId, "ai_questions", plan);
-    const targets = questionTargets(parts, allowance.remaining);
+    const targets = u.cardsOnly ? parts.map(() => 0) : questionTargets(parts, allowance.remaining);
     const inserted = await db
       .insert(chunks)
       .values(parts.map((c, i) => ({ uploadId: u.id, position: c.position, text: c.text, page: c.page, pageEnd: c.pageEnd, label: c.label, questionTarget: targets[i] })))
@@ -416,15 +417,18 @@ export const generateChunk: Handler = async (db, job) => {
 
   const plan = await viewerPlan(db, u.userId);
   const left = (await getUsage(db, u.userId, "ai_questions", plan)).remaining;
-  const n = Math.max(0, Math.min(chunk.questionTarget, left));
+  const n = u.cardsOnly ? 0 : Math.max(0, Math.min(chunk.questionTarget, left));
   const knownTopics = (await db.select({ name: topics.name }).from(topics).where(eq(topics.courseId, u.courseId))).map((t) => t.name);
 
   let set: GeneratedSet = { topic: heading ?? "", questions: [], flashcards: [], theory: [] };
   let provider: string | null = null;
+  // Allowance used up mid-upload: flashcards from every other part only, to save AI quota.
+  const skipAi = n === 0 && !u.cardsOnly && !u.isPastPaper && chunk.position % 2 === 1;
   try {
+    if (skipAi) throw new AiError("Skipped to save AI quota.", "invalid");
     const res = u.isPastPaper
       ? await ai.extractPastQuestions(db, { course, text: chunk.text, label: chunk.label ?? "", max: n, knownTopics })
-      : await ai.generateQuestions(db, { course, text: chunk.text, label: chunk.label ?? "", questionCount: n, flashcardCount: flashcardTarget(chunk.text, n), theoryCount: n > 0 ? 1 : 0, knownTopics });
+      : await ai.generateQuestions(db, { course, text: chunk.text, label: chunk.label ?? "", questionCount: n, flashcardCount: u.cardsOnly ? Math.min(20, Math.max(8, Math.round(chunk.text.length / 250))) : flashcardTarget(chunk.text, n), theoryCount: n > 0 ? 1 : 0, knownTopics });
     set = res.value;
     provider = res.provider;
   } catch (err) {
@@ -489,6 +493,7 @@ export const generateChunk: Handler = async (db, job) => {
       difficulty: bank.d,
       sourceLabel: own ? `${u.title} · ${own}` : sourceLabel,
       isPastQuestion: u.isPastPaper,
+      keepOptionOrder: "keepOrder" in bank && !!bank.keepOrder,
       visibility: repeat ? "private" : visibility,
     });
   }
@@ -543,7 +548,12 @@ async function chunkFinished(db: Db, uploadId: string, madeQ: number, madeF: num
     .returning();
   if (!u || u.chunksDone < u.chunksTotal || u.status !== "generating") return;
   if (u.questionsMade + u.flashcardsMade === 0) {
-    await fail(db, u.id, u.questionBudget === 0 ? "You've used today's AI questions. Upload again after midnight." : "We couldn't make questions from this file. Try clearer pages.");
+    const why = u.cardsOnly
+      ? "We couldn't make flashcards from this file. Try clearer pages."
+      : u.questionBudget === 0
+        ? "You've used today's AI questions. Upload again after midnight."
+        : "We couldn't make questions from this file. Try clearer pages.";
+    await fail(db, u.id, why);
     return;
   }
   const done = await db
@@ -612,6 +622,7 @@ export type UploadView = {
   statusLine: string | null;
   error: string | null;
   isPastPaper: boolean;
+  cardsOnly: boolean;
   reused: boolean;
   /** Questions live on the original upload (same course, already shared). */
   linked: boolean;
@@ -682,6 +693,7 @@ export async function getUploadView(db: Db, userId: string, uploadId: string, no
     statusLine: u.statusLine,
     error: u.error,
     isPastPaper: u.isPastPaper,
+    cardsOnly: u.cardsOnly,
     reused: !!u.reusedFromId,
     linked: sourceId !== u.id,
     contribute: u.visibility === "contribute",

@@ -81,6 +81,17 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
               {sp.error === "slow-down" ? "Too many sign-in links asked for. Wait a minute and try again." : "Sign-in didn't work. Please try again."}
             </p>
           )}
+          <p className="text-[13px] leading-relaxed text-ink-muted">
+            By continuing you agree to our{" "}
+            <Link href="/terms" className="tap font-semibold text-accent">
+              Terms
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="tap font-semibold text-accent">
+              Privacy Policy
+            </Link>
+            .
+          </p>
         </div>
       ) : demoMode ? (
         <Link href="/home" className={buttonClass("primary", "lg")}>

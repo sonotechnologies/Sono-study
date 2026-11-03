@@ -124,3 +124,28 @@ describe("tutor (Milestone 5 acceptance)", () => {
     expect(splitPages("Just one page.", "slide 4", 4)).toEqual([{ label: "slide 4", page: 4, text: "Just one page." }]);
   });
 });
+
+describe("answer reuse", () => {
+  it("reuses a classmate's answer to the same question on the same notes: no AI call, no message used", async () => {
+    const counted = fakeProvider("fake");
+    let answers = 0;
+    const counting: AiProvider = {
+      ...counted,
+      generate: async (req) => {
+        if (req.task === "answer_from_notes") answers++;
+        return counted.generate(req);
+      },
+    };
+    setAiProvidersForTests([counting]);
+    const [first, second] = ["cache-a", "cache-b"];
+    await student(first);
+    await student(second);
+    const a = await askTutor(db, free(first), GST, { text: "Where does the thesis statement of an essay usually come?" }, NOW);
+    const b = await askTutor(db, free(second), GST, { text: "where does the THESIS statement of an essay usually come" }, NOW);
+    expect(answers).toBe(1);
+    expect(b).toMatchObject({ cached: true, content: a.content });
+    expect(b.citations.map((c) => c.label)).toEqual(["Classmate's notes · p.6"]);
+    const used = await db.select().from(tutorMessages).where(eq(tutorMessages.userId, second));
+    expect(used).toHaveLength(2); // the question and the reused answer are in their history
+  });
+});

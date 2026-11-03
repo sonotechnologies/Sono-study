@@ -204,9 +204,17 @@ export default async function Landing() {
 
       <footer className="flex flex-col justify-between gap-2 border-t border-border px-4 py-8 text-[14px] text-ink-muted sm:flex-row sm:px-8 lg:px-20">
         <span>Sono Study · part of Sono Education</span>
-        <a href={`mailto:${process.env.SUPPORT_EMAIL || "support@sono.study"}`} className="hover:text-ink">
-          Contact
-        </a>
+        <span className="flex gap-5">
+          <Link href="/privacy" className="hover:text-ink">
+            Privacy
+          </Link>
+          <Link href="/terms" className="hover:text-ink">
+            Terms
+          </Link>
+          <a href={`mailto:${process.env.SUPPORT_EMAIL || "support@sono.study"}`} className="hover:text-ink">
+            Contact
+          </a>
+        </span>
       </footer>
     </div>
   );

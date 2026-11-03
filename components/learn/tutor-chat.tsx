@@ -21,6 +21,12 @@ const QUICK: { action: QuickAction; label: string }[] = [
   { action: "example", label: "Give an example" },
 ];
 
+/** "A) Receiving" lines in a quiz question become tap-to-answer buttons. */
+export function quizOptions(content: string): { letter: string; text: string }[] {
+  const opts = [...content.matchAll(/^\s*([A-D])[).:]\s+(.+?)\s*$/gm)].map((m) => ({ letter: m[1], text: m[2] }));
+  return opts.length >= 2 && opts.every((o, i) => o.letter === "ABCD"[i]) ? opts : [];
+}
+
 function citationHref(c: TutorCitation) {
   if (!c.own) return null; // classmates' files stay private: show where it's from, no link
   const pdf = /· p\.\d/.test(c.label);
@@ -250,9 +256,24 @@ export function TutorChat({
         </div>
 
         <div className="flex flex-none flex-col gap-2 border-t border-border bg-bg px-5 pb-3 pt-2 lg:px-0">
+          {last?.role === "assistant" && !pending && quizOptions(last.content).length > 0 && (
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Your answer">
+              {quizOptions(last.content).map((o) => (
+                <button
+                  key={o.letter}
+                  type="button"
+                  onClick={() => send({ text: `${o.letter}) ${o.text}` }, `${o.letter}) ${o.text}`)}
+                  className="min-h-11 rounded-[12px] border border-border bg-surface px-3.5 text-left text-[14px] hover:border-accent"
+                >
+                  <span className="font-semibold text-accent">{o.letter}</span> · {o.text}
+                </button>
+              ))}
+            </div>
+          )}
           {last?.role === "assistant" &&
             last.citations.length > 0 &&
-            !pending && (
+            !pending &&
+            quizOptions(last.content).length === 0 && (
               <div className="-mx-5 flex gap-2 overflow-x-auto px-5 lg:mx-0 lg:px-0">
                 {QUICK.map((q) => (
                   <button

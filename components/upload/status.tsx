@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { AlertCircle, Check } from "lucide-react";
 import { startFromUploadAction } from "@/app/(app)/upload/actions";
 import { buttonClass, ButtonLink } from "@/components/ui/primitives";
+import { cn } from "@/lib/cn";
 import type { UploadView } from "@/lib/uploads";
 import { ProgressCard, type ProgressPhase } from "./progress-card";
 
@@ -65,9 +66,15 @@ export function UploadStatus({ initial }: { initial: UploadView }) {
       <p className="text-sm leading-relaxed text-ink-muted">
         You can leave this screen. Your questions keep cooking on our side, even if your data drops, and they&apos;ll be waiting under Upload.
       </p>
-      <ButtonLink href={`/courses/${view.courseId}/mock`} variant="secondary" className="mt-auto">
-        Practise {view.courseCode} while you wait
-      </ButtonLink>
+      <p className="mt-auto text-center text-[13px] text-ink-muted">While you wait</p>
+      <div className="grid grid-cols-2 gap-2">
+        <ButtonLink href={`/cards/${view.courseId}`} variant="secondary">
+          Review flashcards
+        </ButtonLink>
+        <ButtonLink href={`/courses/${view.courseId}/mock`} variant="secondary">
+          Practise {view.courseCode}
+        </ButtonLink>
+      </div>
     </div>
   );
 }
@@ -100,7 +107,7 @@ function Ready({ view }: { view: UploadView }) {
       </span>
       <div className="flex flex-col gap-2">
         <h1 className="font-display text-[40px] font-bold leading-none">
-          {view.questionsMade} question{view.questionsMade === 1 ? "" : "s"}
+          {view.cardsOnly ? `${view.flashcardsMade} flashcard${view.flashcardsMade === 1 ? "" : "s"}` : `${view.questionsMade} question${view.questionsMade === 1 ? "" : "s"}`}
         </h1>
         <p className="text-base leading-normal text-ink-muted">
           {view.reused ? `Ready instantly: a classmate uploaded this same file, so nothing had to be made again. ` : `Ready from ${source}. `}
@@ -125,19 +132,29 @@ function Ready({ view }: { view: UploadView }) {
           </ul>
         </div>
       )}
-      {view.flashcardsMade > 0 && (
+      {view.flashcardsMade > 0 && !view.cardsOnly && (
         <div className="flex items-center justify-between rounded-2xl border border-border bg-surface p-3.5">
           <span className="text-sm">Also made {view.flashcardsMade} flashcards</span>
           {view.xpEarned > 0 && <span className="text-sm font-semibold text-spark">+{view.xpEarned} XP</span>}
         </div>
       )}
-      <p className="text-[13px] leading-normal text-ink-muted">
+      <p className={cn("text-[13px] leading-normal text-ink-muted", view.cardsOnly && "hidden")}>
         Questions and explanations are AI-generated from your notes. Spot a mistake?{" "}
         <Link href={`/upload/${view.id}/questions`} className="font-semibold text-accent">
           Review and fix it
         </Link>
         .
       </p>
+      {view.cardsOnly ? (
+        <div className="mt-auto flex flex-col gap-2">
+          <ButtonLink href={`/cards/${view.courseId}`} size="lg">
+            Review your flashcards
+          </ButtonLink>
+          <ButtonLink href={`/upload?course=${view.courseId}`} variant="secondary">
+            Make questions from another upload
+          </ButtonLink>
+        </div>
+      ) : (
       <div className="mt-auto flex flex-col gap-2">
         <button type="button" disabled={!!pending || mockCount === 0} onClick={() => start("mock")} className={buttonClass("primary", "lg")}>
           {pending === "mock" ? "Starting…" : `Start a ${mockCount}-question mock`}
@@ -151,6 +168,7 @@ function Ready({ view }: { view: UploadView }) {
           </ButtonLink>
         </div>
       </div>
+      )}
     </div>
   );
 }
