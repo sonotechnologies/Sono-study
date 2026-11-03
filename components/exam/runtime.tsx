@@ -497,7 +497,7 @@ function TimerPill({ left, low, pulse }: { left: number | null; low: boolean; pu
       )}
     >
       <Clock size={16} strokeWidth={2} className={low ? "" : "text-ink-muted"} aria-hidden />
-      <span className="font-display text-base font-bold lg:text-lg">{left === null ? "Untimed" : formatClock(left)}</span>
+      <span className="font-display text-base font-bold tabular-nums lg:text-lg">{left === null ? "Untimed" : formatClock(left)}</span>
     </div>
   );
 }

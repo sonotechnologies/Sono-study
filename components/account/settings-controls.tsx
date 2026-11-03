@@ -153,7 +153,7 @@ export function ReminderTime({ initial }: { initial: string }) {
   return (
     <>
       {" · "}
-      <span className="relative inline-block rounded underline decoration-border underline-offset-4 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent">
+      <span className="tap relative inline-block rounded underline decoration-border underline-offset-4 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent">
         {time}
         {/* Invisible native input over the 24-hour label, so the label never depends on the device's clock format. */}
         <input
@@ -186,7 +186,7 @@ export function HandleEditor({ handle }: { handle: string | null }) {
   }, { error: null });
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
-      <Dialog.Trigger className="text-ink-muted hover:text-ink">
+      <Dialog.Trigger className="tap text-ink-muted hover:text-ink">
         {handle ? `@${handle}` : "Pick a handle"}
         <span className="hidden lg:inline"> · Edit</span>
       </Dialog.Trigger>

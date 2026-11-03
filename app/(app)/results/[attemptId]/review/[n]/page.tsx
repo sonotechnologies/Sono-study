@@ -31,7 +31,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ attempt
   const base = `/results/${attemptId}`;
 
   return (
-    <main className="mx-auto flex min-h-[calc(100dvh-64px)] max-w-[720px] flex-col lg:min-h-dvh lg:pt-6">
+    <main className="mx-auto flex min-h-dvh max-w-[720px] flex-col lg:min-h-dvh lg:pt-6">
       <div className="flex items-center pr-5 lg:pr-0">
         <div className="flex-1">
           <TopBar back={base} title={`Review · Q${index + 1} of ${total}`} />

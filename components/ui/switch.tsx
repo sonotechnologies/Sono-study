@@ -8,7 +8,7 @@ export function Switch({ className, ...props }: React.ComponentProps<typeof Swit
   return (
     <SwitchPrimitive.Root
       className={cn(
-        "relative h-7 w-12 flex-none rounded-full border border-border bg-surface-2 transition-colors duration-150",
+        "tap relative h-7 w-12 flex-none rounded-full border border-border bg-surface-2 transition-colors duration-150",
         "data-[state=checked]:border-accent data-[state=checked]:bg-accent disabled:opacity-60",
         className,
       )}

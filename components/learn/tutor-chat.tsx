@@ -156,7 +156,7 @@ export function TutorChat({
         {last?.role === "assistant" && last.citations.length > 0 && !pending && (
           <div className="-mx-5 flex gap-2 overflow-x-auto px-5 lg:mx-0 lg:px-0">
             {QUICK.map((q) => (
-              <button key={q.action} type="button" onClick={() => send({ action: q.action }, q.label)} className="h-9 flex-none rounded-full border border-border bg-surface px-3.5 text-[13px] font-semibold hover:border-accent">
+              <button key={q.action} type="button" onClick={() => send({ action: q.action }, q.label)} className="h-11 flex-none rounded-full border border-border bg-surface px-4 text-[13px] font-semibold hover:border-accent">
                 {q.label}
               </button>
             ))}

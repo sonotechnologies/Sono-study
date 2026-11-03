@@ -105,7 +105,7 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
                   .map((t) => (
                     <li key={t.id}>
                       <form action={startPracticeAction.bind(null, courseId, [t.id])}>
-                        <button type="submit" className="flex min-h-10 items-center gap-2 rounded-full border border-border bg-surface px-3.5 text-sm hover:border-accent">
+                        <button type="submit" className="flex min-h-11 items-center gap-2 rounded-full border border-border bg-surface px-3.5 text-sm hover:border-accent">
                           <span aria-hidden className="size-2 rounded-full" style={{ background: t.label ? MASTERY_COLOR[t.label] : "var(--border)" }} />
                           {t.name}
                           <span className="text-xs font-semibold" style={{ color: t.label ? MASTERY_COLOR[t.label] : "var(--ink-muted)" }}>
@@ -213,7 +213,7 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
           <section aria-label="My uploads" className="flex flex-col">
             <SectionTitle
               action={
-                <Link href={`/upload?course=${courseId}`} className="text-sm font-semibold text-accent">
+                <Link href={`/upload?course=${courseId}`} className="tap text-sm font-semibold text-accent">
                   + Upload
                 </Link>
               }
@@ -245,7 +245,7 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
           <section aria-label="This week's leaderboard" className="flex flex-col gap-2.5 rounded-2xl border border-border bg-surface p-4">
             <SectionTitle
               action={
-                <Link href={`/leaderboard?course=${courseId}`} className="text-sm font-semibold text-accent">
+                <Link href={`/leaderboard?course=${courseId}`} className="tap text-sm font-semibold text-accent">
                   Full board
                 </Link>
               }

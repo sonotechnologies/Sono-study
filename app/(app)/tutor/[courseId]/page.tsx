@@ -26,7 +26,7 @@ export default async function TutorPage({ params }: { params: Promise<{ courseId
   const names = [...topics].sort((a, b) => (a.mastery ?? 0) - (b.mastery ?? 0)).map((t) => t.name);
   const examples = names.length >= 3 ? [`Explain ${names[0]} simply`, `Summarise ${names[1]} in 5 points`, `Quiz me on ${names[2]}`] : ["Summarise my notes in 5 points", "What are the key terms I should know?", "Quiz me on my notes"];
   return (
-    <main className="mx-auto flex h-[calc(100dvh-64px-env(safe-area-inset-bottom))] w-full max-w-[720px] flex-col lg:h-dvh lg:pt-6">
+    <main className="mx-auto flex h-[calc(100dvh-env(safe-area-inset-bottom))] w-full max-w-[720px] flex-col lg:h-dvh lg:pt-6">
       <TutorChat
         courseId={courseId}
         courseCode={displayCourseCode(course.code)}

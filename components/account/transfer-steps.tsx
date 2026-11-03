@@ -76,7 +76,7 @@ export function TransferSteps(props: {
           No {amount} transfer with code {props.code} reached our {props.methodName} account, so the pass was switched off. If you did send it,
           email us your receipt and we&apos;ll sort it out.
         </p>
-        <div className="mt-auto flex flex-col gap-2">
+        <div className="mt-auto flex flex-col gap-2 lg:mt-4">
           <ButtonLink href="/profile?paywall=1" size="lg">
             Start a new payment
           </ButtonLink>
@@ -118,7 +118,7 @@ export function TransferSteps(props: {
             </div>
           )}
         </dl>
-        <div className="mt-auto flex flex-col gap-2">
+        <div className="mt-auto flex flex-col gap-2 lg:mt-4">
           <ButtonLink href="/home" size="lg">
             {status === "granted" ? "Start studying" : "Back to studying"}
           </ButtonLink>
@@ -153,7 +153,7 @@ export function TransferSteps(props: {
           {error}
         </p>
       )}
-      <div className="mt-auto flex flex-col gap-2">
+      <div className="mt-auto flex flex-col gap-2 lg:mt-4">
         <button
           type="button"
           disabled={pending || !props.accountNumber}

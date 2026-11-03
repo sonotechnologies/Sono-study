@@ -78,7 +78,7 @@ export default async function ResultsPage({ params, searchParams }: { params: Pr
           </span>
         )}
         <div className="flex items-baseline gap-1.5 lg:gap-2">
-          <ScoreCountUp value={score} className="font-display text-[56px] font-bold leading-none tracking-[-0.03em] lg:text-[96px]" />
+          <ScoreCountUp value={score} className="font-display text-[56px] font-bold leading-none tracking-[-0.03em] tabular-nums lg:text-[96px]" />
           <span className="font-display text-[28px] font-semibold text-ink-muted lg:text-[40px]">/{formatScore(max)}</span>
         </div>
         <p className="text-base leading-normal lg:text-xl">{line}</p>

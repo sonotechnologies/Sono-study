@@ -180,7 +180,7 @@ export default async function Landing() {
           <div className="flex flex-col">
             {FAQ.map(([q, a], i) => (
               <details key={q} open={i === 0} className="group border-t border-border py-5 lg:py-[22px]">
-                <summary className="flex cursor-pointer list-none justify-between gap-4 text-[17px] font-semibold lg:text-lg [&::-webkit-details-marker]:hidden">
+                <summary className="-my-2 flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 py-2 text-[17px] font-semibold lg:text-lg [&::-webkit-details-marker]:hidden">
                   {q}
                   <span aria-hidden className="text-xl font-normal text-ink-muted">
                     <span className="group-open:hidden">+</span>

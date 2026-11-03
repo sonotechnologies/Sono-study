@@ -32,7 +32,7 @@ export default async function CoursesPage({ searchParams }: { searchParams: Prom
     <main className="mx-auto flex max-w-[960px] flex-col gap-5 px-5 pt-4 pb-6 lg:gap-7 lg:px-12 lg:py-10">
       <header className="flex items-end justify-between gap-4">
         <h1 className="font-display text-[22px] font-bold lg:text-[32px]">Your courses</h1>
-        <Link href="/onboarding?edit=1&step=3" className="text-sm font-semibold text-accent">
+        <Link href="/onboarding?edit=1&step=3" className="tap text-sm font-semibold text-accent">
           Edit courses
         </Link>
       </header>

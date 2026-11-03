@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { demoMode } from "@/lib/auth";
 import { DailyLimitState, PaymentSuccessState, QueueBusyState } from "@/components/account/state-cards";
 import { HomeSkeleton } from "@/components/account/skeletons";
 import { inviteUrl } from "@/lib/invite";
@@ -7,9 +8,9 @@ import { addDays, nextDailyReset } from "@/lib/time";
 
 export const metadata = { title: "States preview" };
 
-/** Dev-only gallery of the 6d inline states and 6e skeleton, with sample values. */
+/** Dev and demo-mode gallery of the 6d inline states and 6e skeleton, with sample values. */
 export default function StatesPreview() {
-  if (process.env.NODE_ENV === "production") notFound();
+  if (process.env.NODE_ENV === "production" && !demoMode) notFound();
   const now = new Date();
   return (
     <main className="flex flex-col gap-10 px-5 py-6 lg:px-12 lg:py-10">
