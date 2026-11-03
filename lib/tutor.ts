@@ -235,7 +235,15 @@ export async function askTutor(
   }
   const citations: TutorCitation[] = cited.map((id) => {
     const p = byId.get(id)!;
-    return { id, label: p.own ? p.label : p.label.replace(/^.*? · /, "Classmate's notes · "), uploadId: p.uploadId, page: p.page, own: p.own };
+    const quote = p.text.replace(/\s+/g, " ").trim();
+    return {
+      id,
+      label: p.own ? p.label : p.label.replace(/^.*? · /, "Classmate's notes · "),
+      uploadId: p.uploadId,
+      page: p.page,
+      own: p.own,
+      quote: quote.length > 280 ? `${quote.slice(0, 277).replace(/\s+\S*$/, "")}…` : quote,
+    };
   });
   return save({ content: reply.answer.trim(), citations, notInNotes: false, declined: false }, cited);
 }

@@ -31,6 +31,8 @@ const FOCUS = [
   /^\/billing\//,
 ];
 export const isFocusRoute = (pathname: string) => FOCUS.some((r) => r.test(pathname));
+/** Desktop focus (design 5f): the flashcard session hides the sidebar too. */
+const isDesktopFocus = (pathname: string) => /^\/cards\/[^/]+$/.test(pathname);
 
 /** The page area: leaves room for the phone tab bar, except on focus screens. */
 export function MainArea({ children }: { children: React.ReactNode }) {
@@ -41,6 +43,7 @@ export function MainArea({ children }: { children: React.ReactNode }) {
 /** Desktop (≥1024px): 248px sidebar — logo, 44px nav items, Upload CTA at the bottom. */
 export function Sidebar() {
   const pathname = usePathname();
+  if (isDesktopFocus(pathname)) return null;
   return (
     <aside className="sticky top-0 hidden h-dvh w-[248px] flex-none flex-col gap-1 border-r border-border px-4 py-6 lg:flex">
       <Link href="/home" className="px-3 pb-6">

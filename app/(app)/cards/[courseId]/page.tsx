@@ -17,7 +17,7 @@ export default async function CardStudyPage({ params }: { params: Promise<{ cour
   const db = await getDb();
   const [cards, due] = await Promise.all([dueQueue(db, viewer.id, courseId, 20), dueCounts(db, viewer.id, courseId)]);
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-[640px] flex-col lg:min-h-dvh lg:pt-6">
+    <main className="mx-auto flex min-h-dvh w-full max-w-[640px] flex-col lg:min-h-dvh lg:max-w-[760px] lg:pt-4">
       {/* key: a fresh session (e.g. "Practise the Again cards") remounts with the new queue */}
       <CardSession key={cards.map((c) => c.id).join(",")} courseId={courseId} courseCode={displayCourseCode(course.code)} cards={cards} dueTotal={due.total} />
     </main>

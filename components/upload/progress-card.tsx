@@ -24,16 +24,17 @@ function mb(bytes: number) {
   return bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
+/** Each step gets its share of the bar, so it never lags behind the ticked steps. */
 export function progressPercent(v: ProgressView): number {
   switch (v.phase) {
     case "uploading":
-      return v.sizeBytes ? Math.round(10 * Math.min(1, (v.sent ?? 0) / v.sizeBytes)) : 2;
+      return Math.round(2 + 23 * (v.sizeBytes ? Math.min(1, (v.sent ?? 0) / v.sizeBytes) : 0));
     case "waiting":
-      return 12;
+      return 27;
     case "reading":
-      return 20;
+      return 35;
     case "making":
-      return Math.round(25 + 75 * Math.min(1, (v.chunksDone ?? 0) / Math.max(1, v.chunksTotal ?? 1)));
+      return Math.round(45 + 55 * Math.min(1, (v.chunksDone ?? 0) / Math.max(1, v.chunksTotal ?? 1)));
   }
 }
 

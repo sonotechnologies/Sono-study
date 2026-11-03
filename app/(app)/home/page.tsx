@@ -73,16 +73,25 @@ export default async function HomePage() {
   const sortedCourses = [...others].sort((a, b) => (a.score ?? 2) - (b.score ?? 2));
   const pct = snap?.readiness == null ? null : Math.round(snap.readiness * 100);
   const code = focus ? displayCourseCode(focus.code) : "";
+  const focusDays = focus?.examDate ? daysUntilExam(focus.examDate, at) : null;
+  // Desktop stat row (4b): the other courses, soonest exam first.
+  const otherTiles = others
+    .filter((c) => c.id !== focus?.id)
+    .map((c) => ({ ...c, days: c.examDate ? daysUntilExam(c.examDate, at) : null }))
+    .sort((a, b) => (a.days ?? 999) - (b.days ?? 999))
+    .slice(0, running ? 2 : 3);
 
   return (
     <main className="flex flex-col gap-4 px-5 pt-3 pb-6 lg:gap-7 lg:px-12 lg:py-10">
-      <header className="flex items-center justify-between gap-4">
-        <h1 className="font-display text-lg font-bold lg:text-[40px]">
-          <span className="lg:hidden">Hey {first}</span>
-          <span className="hidden lg:inline">
+      <header className="flex items-end justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          {focus && focusDays !== null && focusDays >= 0 && focusDays <= 14 && (
+            <span className="hidden text-[15px] text-ink-muted lg:block">Before your {code} exam…</span>
+          )}
+          <h1 className="font-display text-lg font-bold lg:text-[40px] lg:leading-tight">
             {greeting(at)}, {first}
-          </span>
-        </h1>
+          </h1>
+        </div>
         <div className="flex gap-2.5">
           <Pill className="h-8 gap-1.5 px-2.5 text-sm font-bold text-spark lg:h-10 lg:px-3.5 lg:text-base">
             <Flame size={16} strokeWidth={1.75} aria-hidden />
@@ -94,7 +103,7 @@ export default async function HomePage() {
       </header>
 
       {running && (
-        <section aria-label="Continue mock" className="flex items-center gap-4 rounded-2xl bg-accent-soft p-4 lg:p-5">
+        <section aria-label="Continue mock" className="flex items-center gap-4 rounded-2xl bg-accent-soft p-4 lg:hidden">
           <div className="flex flex-1 flex-col gap-0.5">
             <span className="font-display text-lg font-bold">Continue {running.mode === "challenge" ? "challenge" : running.mode === "practice" ? "practice" : "mock"}</span>
             <span className="text-sm text-ink-muted">
@@ -122,49 +131,55 @@ export default async function HomePage() {
 
       {focus && snap && (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-6">
-          <section aria-label={`${code} readiness`} className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-surface p-4 lg:p-6">
-            <Link href={`/courses/${focus.id}`} className="flex flex-col items-center gap-0.5">
+          <section
+            aria-label={`${code} readiness`}
+            className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-surface p-4 lg:flex-row lg:items-center lg:gap-8 lg:p-8"
+          >
+            <Link href={`/courses/${focus.id}`} className="flex flex-col items-center gap-0.5 lg:hidden">
               <span className="text-[13px] text-ink-muted">{examLine(focus.examDate, focus.examTime, at)}</span>
               <span className="font-display text-[22px] font-bold">{code}</span>
             </Link>
-            <Ring value={snap.readiness} size={140} stroke={12} label={pct === null ? "No readiness yet" : `${pct}% ready, ${snap.label}`}>
-              <span className="font-display text-[36px] font-bold leading-none">{pct === null ? "–" : `${pct}%`}</span>
+            <Ring value={snap.readiness} size={140} stroke={12} className="lg:size-[172px]" label={pct === null ? "No readiness yet" : `${pct}% ready, ${snap.label}`}>
+              <span className="font-display text-[36px] font-bold leading-none lg:text-[44px]">{pct === null ? "–" : `${pct}%`}</span>
               <span className="text-[13px] text-ink-muted">{snap.label ? `ready · ${snap.label}` : "take a mock"}</span>
             </Ring>
-            {snap.trend !== null && snap.trend !== 0 && (
-              <span className={cn("text-[13px] font-semibold", snap.trend > 0 ? "text-spark" : "text-ink-muted")}>
-                {snap.trend > 0 ? "+" : ""}
-                {snap.trend}% this week
-              </span>
-            )}
-            <ButtonLink href={`/courses/${focus.id}/mock?count=30`} size="lg" className="w-full">
-              Start 30-question mock
-            </ButtonLink>
-            {weak.length > 0 ? (
-              <form action={fixWeakTopicsAction.bind(null, focus.id)} className="w-full">
-                <button type="submit" className={buttonClass("secondary", "md", "w-full")}>
-                  Fix {Math.min(3, weak.length)} weak topic{Math.min(3, weak.length) === 1 ? "" : "s"}
-                </button>
-              </form>
-            ) : (
-              <ButtonLink href={`/courses/${focus.id}`} variant="secondary" className="w-full">
-                Practise a topic
-              </ButtonLink>
-            )}
+            <div className="flex w-full min-w-0 flex-col items-center gap-3 lg:items-start lg:gap-2">
+              <Link href={`/courses/${focus.id}`} className="hidden flex-col gap-1 lg:flex">
+                <span className="text-sm text-ink-muted">{examLine(focus.examDate, focus.examTime, at)}</span>
+                <span className="font-display text-[28px] font-bold leading-tight">
+                  {code}
+                  {focusDays !== null && focusDays >= 0 ? (focusDays === 0 ? " is today" : ` in ${focusDays} day${focusDays === 1 ? "" : "s"}`) : ""}
+                </span>
+              </Link>
+              {snap.trend !== null && snap.trend !== 0 && (
+                <span className={cn("text-[13px] font-semibold lg:text-sm", snap.trend > 0 ? "text-spark" : "text-ink-muted")}>
+                  {snap.trend > 0 ? "+" : ""}
+                  {snap.trend}% this week
+                </span>
+              )}
+              <div className="flex w-full flex-col gap-3 lg:mt-3 lg:flex-row lg:flex-wrap">
+                <ButtonLink href={`/courses/${focus.id}/mock?count=30`} size="lg" className="w-full lg:w-auto">
+                  Start 30-question mock
+                </ButtonLink>
+                {weak.length > 0 ? (
+                  <form action={fixWeakTopicsAction.bind(null, focus.id)} className="w-full lg:w-auto">
+                    <button type="submit" className={buttonClass("secondary", "lg", "w-full lg:w-auto")}>
+                      Fix {Math.min(3, weak.length)} weak topic{Math.min(3, weak.length) === 1 ? "" : "s"}
+                    </button>
+                  </form>
+                ) : (
+                  <ButtonLink href={`/courses/${focus.id}`} variant="secondary" size="lg" className="w-full lg:w-auto">
+                    Practise a topic
+                  </ButtonLink>
+                )}
+              </div>
+            </div>
           </section>
           <div className="flex flex-col gap-4">
-            <div className="flex gap-2">
-              <Link href={`/cards/${focus.id}`} className="flex flex-1 items-center justify-between rounded-[12px] border border-border bg-surface p-3 hover:border-accent">
-                <span className="text-sm">Cards due</span>
-                <span className="font-display font-bold">{snap.cards.total}</span>
-              </Link>
-              <a href="#plan" className="flex flex-1 items-center justify-between rounded-[12px] border border-border bg-surface p-3 hover:border-accent">
-                <span className="text-sm">Plan</span>
-                <span className="font-display font-bold">
-                  {snap.plan.doneCount}/{snap.plan.items.length}
-                </span>
-              </a>
-            </div>
+            <Link href={`/cards/${focus.id}`} className="flex min-h-12 items-center justify-between rounded-[12px] border border-border bg-surface px-4 hover:border-accent lg:hidden">
+              <span className="text-sm">Cards due</span>
+              <span className="font-display font-bold tabular-nums">{snap.cards.total}</span>
+            </Link>
             <div id="plan" className="scroll-mt-4">
               <PlanCard plan={snap.plan} courseId={focus.id} courseCode={code} hasExamDate={!!focus.examDate} />
             </div>
@@ -172,11 +187,41 @@ export default async function HomePage() {
         </div>
       )}
 
+      {focus && snap && (
+        <section aria-label="At a glance" className="hidden gap-5 lg:grid lg:grid-cols-4">
+          {running && (
+            <Link href={`/mock/${running.id}`} className="flex flex-col gap-1 rounded-2xl bg-accent-soft p-5 hover:brightness-110">
+              <span className="text-[13px] text-ink-muted">Continue {running.mode === "challenge" ? "challenge" : running.mode === "practice" ? "practice" : "mock"}</span>
+              <span className="font-display text-xl font-bold">
+                {runningCourse ? displayCourseCode(runningCourse.code) : ""} · Q{running.currentIndex + 1}/{running.questionIds.length}
+              </span>
+              <span className="text-sm font-semibold text-accent">Resume{runningLeft !== null && ` · ${formatClock(runningLeft)} left`}</span>
+            </Link>
+          )}
+          <Link href={`/cards/${focus.id}`} className="flex flex-col gap-1 rounded-2xl border border-border bg-surface p-5 hover:border-accent">
+            <span className="text-[13px] text-ink-muted">Cards due</span>
+            <span className="font-display text-[28px] font-bold leading-none tabular-nums">{snap.cards.total}</span>
+            <span className="text-sm text-ink-muted">{snap.cards.total ? `about ${Math.max(1, Math.round(snap.cards.total / 4))} min` : "all done today"}</span>
+          </Link>
+          {otherTiles.map((c) => (
+            <Link key={c.id} href={`/courses/${c.id}`} className="flex flex-col gap-1 rounded-2xl border border-border bg-surface p-5 hover:border-accent">
+              <span className="text-[13px] text-ink-muted">{displayCourseCode(c.code)}</span>
+              <span className="font-display text-[28px] font-bold leading-none">
+                {c.days !== null && c.days >= 0 ? (c.days === 0 ? "Today" : `${c.days} day${c.days === 1 ? "" : "s"}`) : c.score === null ? "New" : `${Math.round(c.score * 100)}%`}
+              </span>
+              <span className="text-sm" style={{ color: c.label ? MASTERY_COLOR[c.label] : "var(--ink-muted)" }}>
+                {c.score === null ? "not started" : `${Math.round(c.score * 100)}% · ${c.label}`}
+              </span>
+            </Link>
+          ))}
+        </section>
+      )}
+
       <InstallPrompt />
 
       <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
         {sortedCourses.length > 0 && (
-          <section aria-label="Your courses" className="flex flex-col">
+          <section aria-label="Your courses" className="flex flex-col lg:hidden">
             <h2 className="pb-1.5 text-[13px] text-ink-muted">Your courses</h2>
             <ul className="flex flex-col">
               {sortedCourses.map((c) => (
@@ -194,7 +239,7 @@ export default async function HomePage() {
           </section>
         )}
         {focus && (
-          <Link href={`/leaderboard?course=${focus.id}`}>
+          <Link href={`/leaderboard?course=${focus.id}`} className="lg:col-span-2">
             <Card className="flex items-center gap-4 p-5 hover:border-accent">
               <div className="flex flex-1 flex-col gap-1">
                 <span className="text-[13px] text-ink-muted">{code} · this week</span>
