@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { Check, X } from "lucide-react";
+import { Check, ChevronDown, X } from "lucide-react";
 import { gradeAnswerAction } from "@/app/(app)/theory/actions";
 import { Ring } from "@/components/learn/ring";
 import { buttonClass } from "@/components/ui/primitives";
@@ -163,8 +163,11 @@ export function TheoryAnswer({
         <p className="text-xs text-ink-muted">AI guidance against a marking guide, not an official grade.</p>
       </section>
       {modelAnswer && (
-        <details className="rounded-2xl border border-border bg-surface p-4">
-          <summary className="cursor-pointer text-[15px] font-semibold">See a model answer</summary>
+        <details className="group rounded-2xl border border-border bg-surface p-4">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-[15px] font-semibold [&::-webkit-details-marker]:hidden">
+            See a model answer
+            <ChevronDown size={18} className="text-ink-muted transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
+          </summary>
           <p className="pt-2 text-[15px] leading-relaxed text-ink-muted">{modelAnswer}</p>
         </details>
       )}

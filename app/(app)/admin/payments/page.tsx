@@ -72,12 +72,12 @@ export default async function TransfersAdminPage() {
                 <div className="flex gap-2">
                   <form action={resolveTransferAction.bind(null, p.id, "confirm")}>
                     <button type="submit" className={buttonClass("secondary", "sm")}>
-                      Money arrived · confirm
+                      Confirm paid
                     </button>
                   </form>
                   <form action={resolveTransferAction.bind(null, p.id, "reject")}>
                     <button type="submit" className={buttonClass("ghost", "sm", "text-wrong hover:text-wrong")}>
-                      Not paid · reject
+                      Reject
                     </button>
                   </form>
                 </div>

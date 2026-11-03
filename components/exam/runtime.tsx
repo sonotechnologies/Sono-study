@@ -514,7 +514,7 @@ function Legend({ answered, flagged, blank }: { answered: number; flagged: numbe
         Flagged {flagged}
       </span>
       <span className="flex items-center gap-1.5">
-        <span className="size-3 rounded bg-surface-2" aria-hidden />
+        <span className="size-3 rounded border border-ink-muted/60 bg-surface-2" aria-hidden />
         Blank {blank}
       </span>
     </div>

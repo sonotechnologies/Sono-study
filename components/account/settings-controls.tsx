@@ -128,16 +128,16 @@ export function PushRow({ publicKey }: { publicKey: string }) {
 
   const hint =
     state === "unsupported"
-      ? "Add Sono to your home screen to get reminders on this phone."
+      ? "Add Sono to your home screen to get reminders on this device."
       : state === "denied"
         ? "Notifications are blocked. Allow them in your browser's site settings."
         : state === "on"
-          ? "Reminders below arrive on this phone."
-          : "Turn on to get the reminders below on this phone.";
+          ? "Reminders below arrive on this device."
+          : "Turn on to get the reminders below on this device.";
   return (
     <div className={cn(ROW, "min-h-16")}>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <label htmlFor="toggle-push">Notifications on this phone</label>
+        <label htmlFor="toggle-push">Notifications on this device</label>
         <span className="text-[13px] text-ink-muted">{hint}</span>
         {error && <span className="text-[13px] text-wrong">Couldn&apos;t turn on notifications. Try again.</span>}
       </div>

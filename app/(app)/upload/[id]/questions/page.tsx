@@ -45,7 +45,7 @@ export default async function ReviewQuestionsPage({ params }: { params: Promise<
   const courseCode = displayCourseCode(course?.code ?? "");
   return (
     <main className="mx-auto flex max-w-[720px] flex-col pb-6 lg:pt-6">
-      <TopBar back={`/upload/${id}`} heading={`Review · ${questions.length} questions`} />
+      <TopBar back={`/upload/${id}`} heading={`Review · ${questions.filter((q) => q.type !== "theory").length} questions${questions.some((q) => q.type === "theory") ? ` + ${questions.filter((q) => q.type === "theory").length} theory` : ""}`} />
       {editable && (
         <div className="px-5 pb-4 lg:px-0">
           <SharingToggle uploadId={id} initial={data.upload.visibility === "contribute"} courseCode={courseCode} />

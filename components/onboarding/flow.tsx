@@ -182,7 +182,7 @@ export function OnboardingFlow({
               } else go(step + 1);
             }}
           >
-            {step === 3 ? `Continue with ${courses.length} course${courses.length === 1 ? "" : "s"}` : pending ? "Checking…" : "Continue"}
+            {step === 3 ? (courses.length ? `Continue with ${courses.length} course${courses.length === 1 ? "" : "s"}` : "Add at least one course") : pending ? "Checking…" : "Continue"}
           </button>
         ) : (
           <>

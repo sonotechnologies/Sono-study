@@ -23,9 +23,9 @@ export const metadata: Metadata = { title: "Results" };
 
 const MODE_LABEL = { mock: "Mock results", practice: "Practice results", challenge: "Challenge results" } as const;
 
-export default async function ResultsPage({ params, searchParams }: { params: Promise<{ attemptId: string }>; searchParams: Promise<{ error?: string }> }) {
+export default async function ResultsPage({ params, searchParams }: { params: Promise<{ attemptId: string }>; searchParams: Promise<{ error?: string; show?: string }> }) {
   const { attemptId } = await params;
-  const { error } = await searchParams;
+  const { error, show } = await searchParams;
   const viewer = await requireViewer();
   const db = await getDb();
   const r = await getResult(db, viewer.id, attemptId);
@@ -41,6 +41,7 @@ export default async function ResultsPage({ params, searchParams }: { params: Pr
   const newBest = a.mode === "mock" && r.prevBest !== null && score > r.prevBest;
   const line = resultLine({ score, max, prevBest: a.mode === "mock" ? r.prevBest : null, weakTopics: fix.length });
   const missed = r.items.filter((i) => !i.isCorrect);
+  const onlyMissed = show === "missed" && missed.length > 0;
   const code = displayCourseCode(r.courseCode);
   const pct = max ? Math.round((score / max) * 100) : 0;
   // A classmate's (or seeded) bank: ask for a rating.
@@ -125,35 +126,33 @@ export default async function ResultsPage({ params, searchParams }: { params: Pr
 
         {rateable && <RateBank bankId={rateable.id} title={rateable.title} initial={myRating} />}
 
-        <div className="grid grid-cols-[1fr_2fr] gap-2 lg:flex lg:gap-2.5">
+        {/* Primary action first and widest, on phone and desktop alike. */}
+        <div className="grid grid-cols-[2fr_1fr] gap-2 lg:flex lg:gap-2.5">
           {newBest ? (
             <>
-              <Link href={`/results/${a.id}/review/1`} className={buttonClass("secondary", "lg", "lg:order-2")}>
-                Review
-              </Link>
-              <ShareResultButton attemptId={a.id} text={`New best on ${code}: ${formatScore(score)}/${formatScore(max)} on Sono Study.`} className={buttonClass("primary", "lg", "lg:order-1")}>
+              <ShareResultButton attemptId={a.id} text={`New best on ${code}: ${formatScore(score)}/${formatScore(max)} on Sono Study.`} className={buttonClass("primary", "lg")}>
                 Share to Status
               </ShareResultButton>
+              <Link href={`/results/${a.id}/review/1`} className={buttonClass("secondary", "lg")}>
+                Review
+              </Link>
             </>
           ) : (
             <>
+              <Link href={`/results/${a.id}/review/${missed.length ? missed[0].index + 1 : 1}`} className={buttonClass("primary", "lg")}>
+                {missed.length ? `Review ${missed.length} missed` : "Review answers"}
+              </Link>
               {a.mode !== "challenge" ? (
                 <form action={retakeAction.bind(null, a.id)} className="contents">
-                  <button type="submit" className={buttonClass("secondary", "lg", "lg:order-2")}>
+                  <button type="submit" className={buttonClass("secondary", "lg")}>
                     Retake
                   </button>
                 </form>
               ) : (
-                <Link href={`/leaderboard?course=${a.courseId}`} className={buttonClass("secondary", "lg", "lg:order-2")}>
+                <Link href={`/leaderboard?course=${a.courseId}`} className={buttonClass("secondary", "lg")}>
                   Leaderboard
                 </Link>
               )}
-              <Link
-                href={`/results/${a.id}/review/${missed.length ? missed[0].index + 1 : 1}`}
-                className={buttonClass("primary", "lg", "lg:order-1")}
-              >
-                {missed.length ? `Review ${missed.length} missed` : "Review answers"}
-              </Link>
             </>
           )}
         </div>
@@ -194,9 +193,16 @@ export default async function ResultsPage({ params, searchParams }: { params: Pr
         </Card>
 
         <section aria-label="All questions" className="lg:hidden">
-          <h2 className="pb-1.5 text-[13px] text-ink-muted">All questions</h2>
+          <div className="flex items-center justify-between pb-1.5">
+            <h2 className="text-[13px] text-ink-muted">{onlyMissed ? `Wrong or skipped · ${missed.length}` : "All questions"}</h2>
+            {missed.length > 0 && missed.length < r.items.length && (
+              <Link href={onlyMissed ? `/results/${a.id}` : `/results/${a.id}?show=missed`} scroll={false} replace className="tap text-[13px] font-semibold text-accent">
+                {onlyMissed ? "Show all" : "Only wrong or skipped"}
+              </Link>
+            )}
+          </div>
           <ol>
-            {r.items.map((i) => (
+            {(onlyMissed ? missed : r.items).map((i) => (
               <li key={i.question.id} className="border-b border-border last:border-0">
                 <Link href={`/results/${a.id}/review/${i.index + 1}`} className="flex min-h-12 items-center gap-3">
                   <span

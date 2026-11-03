@@ -153,8 +153,8 @@ await shot("profile");
 // 4. Push: the Profile switch, then a notification delivered to the service worker.
 await page.context().grantPermissions(["notifications"], { origin: B });
 await page.goto(B + "/profile", { waitUntil: "networkidle" });
-const pushRow = page.getByRole("switch", { name: "Notifications on this phone" });
-if (await pushRow.count()) log("Profile shows \"Notifications on this phone\" (VAPID keys set)");
+const pushRow = page.getByRole("switch", { name: "Notifications on this device" });
+if (await pushRow.count()) log("Profile shows \"Notifications on this device\" (VAPID keys set)");
 else fail("push switch missing on Profile");
 await pushRow.click();
 await page.waitForFunction(() => navigator.serviceWorker.getRegistration("/").then((r) => !!r?.active), null, { timeout: 15_000 });
